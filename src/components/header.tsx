@@ -45,6 +45,8 @@ const pages = [
     { href: "/dashboard", label: i18next.t("Server") },
     { href: "/dashboard/service", label: i18next.t("Service") },
     { href: "/dashboard/cron", label: i18next.t("Task") },
+    { href: "/dashboard/batch-operations", label: "批量操作" },
+    { href: "/dashboard/server-metrics", label: "监控指标" },
     { href: "/dashboard/notification", label: i18next.t("Notification") },
     { href: "/dashboard/ddns", label: i18next.t("DDNS") },
     { href: "/dashboard/nat", label: i18next.t("NATT") },

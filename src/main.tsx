@@ -29,6 +29,9 @@ import ProfilePage from "./routes/profile"
 import SettingsPage from "./routes/settings"
 import UserPage from "./routes/user"
 import WAFPage from "./routes/waf"
+import BatchOperationsPage from "./pages/batch-operations"
+import BatchHistoryPage from "./pages/batch-history"
+import ServerMetricsPage from "./pages/server-metrics"
 
 const router = createBrowserRouter([
     {
@@ -145,6 +148,26 @@ const router = createBrowserRouter([
             {
                 path: "/dashboard/settings/online-user",
                 element: <OnlineUserPage />,
+            },
+            {
+                path: "/dashboard/batch-operations",
+                element: (
+                    <ServerProvider withServer>
+                        <BatchOperationsPage />
+                    </ServerProvider>
+                ),
+            },
+            {
+                path: "/dashboard/batch-history",
+                element: <BatchHistoryPage />,
+            },
+            {
+                path: "/dashboard/server-metrics",
+                element: (
+                    <ServerProvider withServer>
+                        <ServerMetricsPage />
+                    </ServerProvider>
+                ),
             },
         ],
     },

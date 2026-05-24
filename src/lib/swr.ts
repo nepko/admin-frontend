@@ -1,4 +1,4 @@
-import { useSWR as useSWROriginal } from "swr"
+import useSWROriginal from "swr"
 import { swrFetcher } from "@/api/api"
 
 export { swrFetcher }

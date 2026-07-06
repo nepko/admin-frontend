@@ -751,6 +751,23 @@ export interface ModelSetting {
     terminal_idle_timeout_seconds: number
     /** 是否启用文件管理器增强（默认关闭） */
     fm_enhanced_enabled: boolean
+    // 二开：终端 AI 助手开关与连接信息（不含明文 API Key）
+    /** 是否启用终端 AI 助手（默认关闭） */
+    ai_enabled: boolean
+    /** OpenAI 兼容接口地址（如 https://api.openai.com/v1） */
+    ai_base_url: string
+    /** 当前是否已配置 API Key（不回传明文） */
+    ai_api_key_set: boolean
+    /** 使用的模型名 */
+    ai_model: string
+    // 以下三项仅用于设置表单字段类型（设置页可编辑），GET 响应体不回传明文 Key，
+    // 故 model.Setting（实际响应）不含这些字段。
+    /** API Key（设置表单可写，留空表示保留） */
+    ai_api_key?: string
+    /** 采样温度 */
+    ai_temperature?: number
+    /** 单次回复最大 token */
+    ai_max_tokens?: number
 }
 
 export interface ModelSettingForm {
@@ -786,6 +803,19 @@ export interface ModelSettingForm {
     terminal_idle_timeout_seconds?: number
     /** 是否启用文件管理器增强（默认关闭） */
     fm_enhanced_enabled?: boolean
+    // 二开：终端 AI 助手配置（ai_api_key 空字符串表示保留已配置密钥）
+    /** 是否启用终端 AI 助手（默认关闭） */
+    ai_enabled?: boolean
+    /** OpenAI 兼容接口地址 */
+    ai_base_url?: string
+    /** API Key；留空表示保留已配置值 */
+    ai_api_key?: string
+    /** 使用的模型名 */
+    ai_model?: string
+    /** 采样温度 */
+    ai_temperature?: number
+    /** 单次回复最大 token */
+    ai_max_tokens?: number
 }
 
 export interface ModelSettingResponse {

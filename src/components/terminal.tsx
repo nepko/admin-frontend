@@ -27,6 +27,11 @@ import { useTranslation } from "react-i18next"
 import { useParams } from "react-router-dom"
 import { toast } from "sonner"
 
+import {
+    registerTerminalInput,
+    unregisterTerminalInput,
+} from "@/lib/terminalBus"
+
 import { FMCard } from "./fm"
 import { Button } from "./ui/button"
 import { IconButton } from "./xui/icon-button"
@@ -34,10 +39,12 @@ import { IconButton } from "./xui/icon-button"
 interface XtermProps {
     wsUrl: string
     setClose: React.Dispatch<React.SetStateAction<boolean>>
+    /** 会话 ID，用于把该终端注册到 terminalBus，供 AI 助手注入命令。 */
+    sessionId?: string
 }
 
 export const XtermComponent = forwardRef<HTMLDivElement, XtermProps & JSX.IntrinsicElements["div"]>(
-    ({ wsUrl, setClose, ...props }, ref) => {
+    ({ wsUrl, setClose, sessionId, ...props }, ref) => {
         const terminalIdRef = useRef<HTMLDivElement>(null)
         const terminalRef = useRef<Terminal | null>(null)
         const wsRef = useRef<WebSocket | null>(null)
@@ -116,8 +123,14 @@ export const XtermComponent = forwardRef<HTMLDivElement, XtermProps & JSX.Intrin
 
             ws.onopen = () => {
                 onResize()
+                if (sessionId) {
+                    registerTerminalInput(sessionId, (text: string) => {
+                        if (ws.readyState === WebSocket.OPEN) ws.send(text)
+                    })
+                }
             }
             ws.onclose = () => {
+                if (sessionId) unregisterTerminalInput(sessionId)
                 terminal.dispose()
                 setClose(true)
             }
@@ -138,7 +151,7 @@ export const XtermComponent = forwardRef<HTMLDivElement, XtermProps & JSX.Intrin
                 if (wsRef.current === ws) wsRef.current = null
                 if (terminalRef.current === terminal) terminalRef.current = null
             }
-        }, [fitAddon, onResize, setClose, wsUrl])
+        }, [fitAddon, onResize, setClose, wsUrl, sessionId])
 
         return <div ref={terminalIdRef} {...props} />
     },
@@ -168,6 +181,7 @@ export const TerminalPage = () => {
                     ref={terminalIdRef}
                     className="max-h-[60%] mb-5 overflow-auto"
                     wsUrl={`/api/v1/ws/terminal/${terminal?.session_id}`}
+                    sessionId={terminal?.session_id}
                     setClose={setOpen}
                 />
             ) : (

@@ -62,6 +62,14 @@ const settingFormSchema = z.object({
     terminal_recording_retention_days: asOptionalField(z.coerce.number().int()),
     terminal_idle_timeout_seconds: asOptionalField(z.coerce.number().int()),
     fm_enhanced_enabled: asOptionalField(z.boolean()),
+
+    // 二开：终端 AI 助手（OpenAI 兼容）
+    ai_enabled: asOptionalField(z.boolean()),
+    ai_base_url: asOptionalField(z.string()),
+    ai_api_key: asOptionalField(z.string()),
+    ai_model: asOptionalField(z.string()),
+    ai_temperature: asOptionalField(z.coerce.number()),
+    ai_max_tokens: asOptionalField(z.coerce.number().int()),
 })
 
 export default function SettingsPage() {
@@ -632,6 +640,113 @@ export default function SettingsPage() {
                                         </FormItem>
                                     )}
                                 />
+                            </CardContent>
+                        </Card>
+                        <Card className="w-full">
+                            <CardContent className="space-y-4 pt-4">
+                                <div className="text-sm font-medium">{t("AITerminalSettings")}</div>
+                                <FormField
+                                    control={form.control}
+                                    name="ai_enabled"
+                                    render={({ field }) => (
+                                        <FormItem className="flex items-center justify-between">
+                                            <Label className="text-sm">{t("EnableAI")}</Label>
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="ai_base_url"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label className="text-sm">{t("AIBaseURL")}</Label>
+                                            <Input
+                                                placeholder="https://api.openai.com/v1"
+                                                {...field}
+                                                value={field.value ?? ""}
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="ai_api_key"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label className="text-sm">{t("AIApiKey")}</Label>
+                                            <Input
+                                                type="password"
+                                                autoComplete="new-password"
+                                                placeholder={config?.config?.ai_api_key_set ? t("AIApiKeyKeep") : t("AIApiKeyPlaceholder")}
+                                                {...field}
+                                                value={field.value ?? ""}
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="ai_model"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label className="text-sm">{t("AIModel")}</Label>
+                                            <Input
+                                                placeholder="gpt-4o-mini"
+                                                {...field}
+                                                value={field.value ?? ""}
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <FormField
+                                        control={form.control}
+                                        name="ai_temperature"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <Label className="text-sm">{t("AITemperature")}</Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.1"
+                                                    {...field}
+                                                    value={field.value ?? ""}
+                                                    onChange={(e) =>
+                                                        field.onChange(
+                                                            e.target.value === ""
+                                                                ? undefined
+                                                                : Number(e.target.value),
+                                                        )
+                                                    }
+                                                />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="ai_max_tokens"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <Label className="text-sm">{t("AIMaxTokens")}</Label>
+                                                <Input
+                                                    type="number"
+                                                    {...field}
+                                                    value={field.value ?? ""}
+                                                    onChange={(e) =>
+                                                        field.onChange(
+                                                            e.target.value === ""
+                                                                ? undefined
+                                                                : Number(e.target.value),
+                                                        )
+                                                    }
+                                                />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
                         <Button type="submit">{t("Confirm")}</Button>

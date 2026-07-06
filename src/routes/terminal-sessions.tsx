@@ -1,5 +1,6 @@
 import { executeBatchCommand, listCommandHistory, listQuickCommands } from "@/api/quick-command"
 import { createTerminal } from "@/api/terminal"
+import { AITerminalPanel } from "@/components/ai-terminal-panel"
 import { TerminalTab, useTerminalTabs } from "@/components/terminal-tabs"
 import {
     BatchCommandResult,
@@ -7,7 +8,7 @@ import {
     QuickCommand,
 } from "@/types"
 import { useServer } from "@/hooks/useServer"
-import { Check, Play, TerminalSquare } from "lucide-react"
+import { Check, Play, Sparkles, TerminalSquare } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import useSWR from "swr"
@@ -50,6 +51,7 @@ export default function TerminalSessionsPage() {
     const [command, setCommand] = useState("")
     const [results, setResults] = useState<BatchCommandResult[] | null>(null)
     const [executing, setExecuting] = useState(false)
+    const [aiOpen, setAiOpen] = useState(false)
 
     const addTab = useTerminalTabs((s) => s.addTab)
 
@@ -125,9 +127,21 @@ export default function TerminalSessionsPage() {
                 >
                     {t("TerminalRecordings")}
                 </Link>
+                <Button
+                    size="sm"
+                    variant={aiOpen ? "default" : "outline"}
+                    onClick={() => setAiOpen((o) => !o)}
+                >
+                    <Sparkles className="h-4 w-4" />
+                    {t("AIAssistant")}
+                </Button>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
+            <div
+                className={`grid grid-cols-1 gap-4 ${
+                    aiOpen ? "lg:grid-cols-[280px_1fr_360px]" : "lg:grid-cols-[280px_1fr]"
+                }`}
+            >
                 {/* 服务器多选 */}
                 <Card>
                     <CardHeader className="pb-2">
@@ -185,6 +199,9 @@ export default function TerminalSessionsPage() {
                         <TerminalTabs />
                     </CardContent>
                 </Card>
+
+                {/* 终端 AI 助手面板（右侧抽屉式列） */}
+                {aiOpen && <AITerminalPanel onClose={() => setAiOpen(false)} />}
             </div>
 
             {/* 快捷命令 / 批量执行 */}

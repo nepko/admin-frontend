@@ -103,6 +103,7 @@ export function TerminalTabs() {
                         <XtermComponent
                             className="h-[420px] overflow-auto"
                             wsUrl={`/api/v1/ws/terminal/${t.sessionId}`}
+                            sessionId={t.sessionId}
                             setClose={() => {}}
                         />
                     </div>

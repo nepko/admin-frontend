@@ -59,6 +59,46 @@ function cleanForTerminal(text: string): string {
         .trim()
 }
 
+// trackQuotes 在已打开引号状态 quote 基础上，扫描该行更新引号开合
+// （忽略反斜杠转义的引号），用于判断多行命令的引号是否已闭合。
+function trackQuotes(line: string, open: "'" | '"' | null): "'" | '"' | null {
+    let q: "'" | '"' | null = open
+    for (let i = 0; i < line.length; i++) {
+        const c = line[i]
+        if (c === "\\") {
+            i++
+            continue
+        }
+        if (c === '"' || c === "'") {
+            if (q === null) q = c
+            else if (q === c) q = null
+        }
+    }
+    return q
+}
+
+// buildLogicalCommands 把多行文本按 shell 语义合并为“逻辑命令”：
+// 行尾以 \ 续行，或引号未闭合时与下一行合并，避免 for/while/heredoc
+// 等多行结构被逐行提前执行（仅在完整逻辑命令后发送回车）。
+function buildLogicalCommands(text: string): string[] {
+    const out: string[] = []
+    let buf = ""
+    let quote: "'" | '"' | null = null
+    const lines = text.split("\n")
+    lines.forEach((line, idx) => {
+        quote = trackQuotes(line, quote)
+        const cont = line.trimEnd().endsWith("\\")
+        const trimmed = cont ? line.slice(0, -1) : line
+        buf = buf ? buf + "\n" + trimmed : trimmed
+        const isLast = idx === lines.length - 1
+        if ((!cont && quote === null) || isLast) {
+            if (buf.trim()) out.push(buf.trim())
+            buf = ""
+        }
+    })
+    return out
+}
+
 export function AITerminalPanel({ onClose }: { onClose: () => void }) {
     const { t } = useTranslation()
     const { data: config } = useSetting()
@@ -75,6 +115,8 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
     })
     const [input, setInput] = useState("")
     const [result, setResult] = useState("")
+    // 逐行注入延时（毫秒），可在面板内调节以适配不同目标主机的 shell 响应速度。
+    const [lineDelay, setLineDelay] = useState(150)
     const [streaming, setStreaming] = useState(false)
     const [error, setError] = useState("")
     const [usage, setUsage] = useState<{
@@ -248,8 +290,9 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
             navigator.clipboard?.writeText(cmd)
             return
         }
-        const lines = cmd.split("\n")
-        lines.forEach((line, i) => {
+        // 合并多行脚本为逻辑命令，再按行限速注入，避免块结构被提前执行。
+        const logical = buildLogicalCommands(cmd)
+        logical.forEach((line, i) => {
             const id = window.setTimeout(() => {
                 sendTerminalInput(activeSessionId, line + "\r")
             }, i * lineDelay)
@@ -421,21 +464,41 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
                             </Button>
                         )}
                         {mode === "gen" && result && !streaming && (
-                            <>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => sendToTerminal()}
-                                    title={activeSessionId ? "" : t("AICopy")}
-                                >
-                                    <Send className="h-4 w-4" />
-                                    {t("AISendToTerminal")}
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={copyResult}>
-                                    <Copy className="h-4 w-4" />
-                                    {t("AICopy")}
-                                </Button>
-                            </>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+                                        {t("AISendDelay")}
+                                    </span>
+                                    <input
+                                        type="range"
+                                        min={30}
+                                        max={600}
+                                        step={30}
+                                        value={lineDelay}
+                                        onChange={(e) => setLineDelay(Number(e.target.value))}
+                                        className="h-1 flex-1 cursor-pointer"
+                                        title={t("AISendDelayHint")}
+                                    />
+                                    <span className="w-12 text-right text-[10px] tabular-nums text-muted-foreground">
+                                        {lineDelay}ms
+                                    </span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => sendToTerminal(lineDelay)}
+                                        title={activeSessionId ? "" : t("AICopy")}
+                                    >
+                                        <Send className="h-4 w-4" />
+                                        {t("AISendToTerminal")}
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={copyResult}>
+                                        <Copy className="h-4 w-4" />
+                                        {t("AICopy")}
+                                    </Button>
+                                </div>
+                            </div>
                         )}
                     </div>
                 )}

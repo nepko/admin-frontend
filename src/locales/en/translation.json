@@ -418,5 +418,7 @@
     "AIServerContext": "Server context: ",
     "Loading": "Loading…",
     "AIPolicyBlocked": "Command blocked by policy",
-    "AIPolicyApproval": "Command requires approval"
+    "AIPolicyApproval": "Command requires approval",
+    "AISendDelay": "Inject delay",
+    "AISendDelayHint": "Interval between lines injected to the terminal, tuned to the target host's shell responsiveness"
 }

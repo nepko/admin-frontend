@@ -418,5 +418,7 @@
     "AIServerContext": "当前上下文：",
     "Loading": "加载中…",
     "AIPolicyBlocked": "命令被策略拦截",
-    "AIPolicyApproval": "命令需审批"
+    "AIPolicyApproval": "命令需审批",
+    "AISendDelay": "注入延时",
+    "AISendDelayHint": "逐行注入终端的间隔，适配不同主机的 shell 响应速度"
 }

@@ -350,5 +350,13 @@
     "Whitelist": "Whitelist",
     "Blacklist": "Blacklist",
     "RequireApproval": "Require approval",
-    "Applicant": "Applicant"
+    "Applicant": "Applicant",
+    "TerminalRecordings": "Terminal Recordings",
+    "TerminalRecordingsDesc": "Replay recorded terminal sessions for audit.",
+    "Replay": "Replay",
+    "SessionID": "Session ID",
+    "Chunks": "Chunks",
+    "Start": "Start",
+    "End": "End",
+    "PermissionDenied": "Permission denied"
 }

@@ -350,5 +350,13 @@
     "Whitelist": "白名单",
     "Blacklist": "黑名单",
     "RequireApproval": "需审批",
-    "Applicant": "申请人"
+    "Applicant": "申请人",
+    "TerminalRecordings": "终端录制回放",
+    "TerminalRecordingsDesc": "查看已录制终端会话的双向字节流，可回放审计。",
+    "Replay": "回放",
+    "SessionID": "会话 ID",
+    "Chunks": "分块",
+    "Start": "开始",
+    "End": "结束",
+    "PermissionDenied": "无权限"
 }

@@ -29,6 +29,7 @@ import ProfilePage from "./routes/profile"
 import SecurityPage from "./routes/security"
 import SettingsPage from "./routes/settings"
 import CommandPolicyPage from "./routes/command-policy"
+import RecordingsPage from "./routes/recordings"
 import TransferPage from "./routes/transfer"
 import UserPage from "./routes/user"
 import WAFPage from "./routes/waf"
@@ -165,6 +166,10 @@ const router = createBrowserRouter([
             {
                 path: "/dashboard/command-policy",
                 element: <CommandPolicyPage />,
+            },
+            {
+                path: "/dashboard/recordings",
+                element: <RecordingsPage />,
             },
         ],
     },

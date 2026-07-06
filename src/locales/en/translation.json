@@ -414,5 +414,6 @@
     "AISending": "Sending…",
     "AIStop": "Stop",
     "AIInsertSelection": "Insert terminal selection",
-    "AIClear": "Clear"
+    "AIClear": "Clear",
+    "AIServerContext": "Server context: "
 }

@@ -414,5 +414,6 @@
     "AISending": "发送中…",
     "AIStop": "停止",
     "AIInsertSelection": "插入终端选中",
-    "AIClear": "清空"
+    "AIClear": "清空",
+    "AIServerContext": "当前上下文："
 }

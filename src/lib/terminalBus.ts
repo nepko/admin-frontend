@@ -26,6 +26,12 @@ export function sendTerminalInput(sessionId: string | undefined, text: string): 
     return true
 }
 
+// hasTerminalSession 判断指定会话的终端是否在线（已注册输入回调）。
+export function hasTerminalSession(sessionId: string | undefined): boolean {
+    if (!sessionId) return false
+    return registry.has(sessionId)
+}
+
 // setLastTerminalSelection 记录某会话的当前选区。
 export function setLastTerminalSelection(sessionId: string, text: string): void {
     lastSelection = { sessionId, text }

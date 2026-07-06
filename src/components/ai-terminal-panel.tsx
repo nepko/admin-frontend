@@ -1,11 +1,19 @@
 import { Copy, Eraser, Send, Sparkles, Square, Wand2, X } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+import useSWR from "swr"
 
 import useSetting from "@/hooks/useSetting"
 import { streamAIChat, type AIChatMessage } from "@/api/ai"
+import { getServers } from "@/api/server"
+import type { ModelServer } from "@/types"
 import { useTerminalTabs } from "./terminal-tabs"
-import { getLastTerminalSelection, sendTerminalInput } from "@/lib/terminalBus"
+import {
+    getLastTerminalSelection,
+    hasTerminalSession,
+    sendTerminalInput,
+} from "@/lib/terminalBus"
+import { Markdown } from "./markdown"
 
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -87,7 +95,34 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
 
     const activeKey = useTerminalTabs((s) => s.activeKey)
     const tabs = useTerminalTabs((s) => s.tabs)
-    const activeSessionId = tabs.find((x) => x.key === activeKey)?.sessionId
+    const activeTab = tabs.find((x) => x.key === activeKey)
+    const activeSessionId = activeTab?.sessionId
+    const activeServerId = activeTab?.serverId
+
+    // 拉取服务器列表以解析当前终端所属服务器的 OS/架构等信息。
+    const { data: servers } = useSWR<ModelServer[]>("/api/v1/server", getServers)
+    const activeServer = servers?.find((s) => s.id === activeServerId)
+
+    // 目标服务器上下文：注入 AI 提示词，使其基于真实环境给出命令与建议。
+    const envContext = useMemo(() => {
+        if (!activeServer) return ""
+        const h = activeServer.host
+        const cpu = h.cpu && h.cpu.length > 0 ? h.cpu[0] : "未知"
+        return (
+            "\n\n【目标服务器上下文】名称：" +
+            activeServer.name +
+            "；系统：" +
+            h.platform +
+            (h.platform_version ? " " + h.platform_version : "") +
+            "；架构：" +
+            h.arch +
+            "；CPU：" +
+            cpu +
+            "；Nezha Agent：" +
+            h.version +
+            "。请基于该环境给出命令与建议。"
+        )
+    }, [activeServer])
 
     // 对话与模式持久化：面板关闭后仍可恢复上下文。
     useEffect(() => {
@@ -141,7 +176,7 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
         setError("")
         if (mode === "chat") {
             const next: AIChatMessage[] = [
-                { role: "system", content: CHAT_SYSTEM },
+                { role: "system", content: CHAT_SYSTEM + envContext },
                 ...chat,
                 { role: "user", content },
             ]
@@ -158,7 +193,7 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
             })
             return
         }
-        const sys = SYSTEM_PROMPTS[mode as Exclude<AIMode, "chat">]
+        const sys = SYSTEM_PROMPTS[mode as Exclude<AIMode, "chat">] + envContext
         runStream(
             [
                 { role: "system", content: sys },
@@ -178,14 +213,32 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
         if (result) await navigator.clipboard.writeText(stripCodeFences(result))
     }
 
-    const sendToTerminal = () => {
+    const sendTimers = useRef<number[]>([])
+    // 卸载时清理未发出的定时发送，避免向已关闭的会话写入。
+    useEffect(
+        () => () => {
+            sendTimers.current.forEach((t) => clearTimeout(t))
+            sendTimers.current = []
+        },
+        [],
+    )
+
+    // 逐行限速注入：避免一次性长串写入 PTY 缓冲导致字符丢失，
+    // 每行之间留间隔让远端 shell 处理完毕。无可用终端时退化为复制。
+    const sendToTerminal = (lineDelay = 150) => {
         const cmd = cleanForTerminal(result)
         if (!cmd) return
-        const ok = sendTerminalInput(activeSessionId, cmd + "\r")
-        if (!ok) {
-            // 没有可用终端会话时退化为复制
+        if (!hasTerminalSession(activeSessionId)) {
             navigator.clipboard?.writeText(cmd)
+            return
         }
+        const lines = cmd.split("\n")
+        lines.forEach((line, i) => {
+            const id = window.setTimeout(() => {
+                sendTerminalInput(activeSessionId, line + "\r")
+            }, i * lineDelay)
+            sendTimers.current.push(id)
+        })
     }
 
     // 把当前终端选区一键填入输入框（解释/诊断模式）。
@@ -277,7 +330,7 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
                                 <span className="mb-1 block text-[10px] uppercase text-muted-foreground">
                                     {m.role}
                                 </span>
-                                <pre className="whitespace-pre-wrap font-sans">{m.content}</pre>
+                                <Markdown content={m.content} className="font-sans" />
                             </div>
                         ))}
                     </div>
@@ -312,9 +365,16 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
                             </div>
                         )}
                         {result && (
-                            <pre className="whitespace-pre-wrap rounded-md border border-border bg-[#0B0E14] p-2 font-mono text-xs text-green-300">
-                                {stripCodeFences(result)}
-                            </pre>
+                            <div className="whitespace-pre-wrap rounded-md border border-border bg-[#0B0E14] p-2 text-xs text-green-300">
+                                <Markdown content={result} />
+                            </div>
+                        )}
+                        {activeServer && (
+                            <p className="text-[10px] text-muted-foreground">
+                                {t("AIServerContext")}
+                                {activeServer.name}（{activeServer.host.platform} /{" "}
+                                {activeServer.host.arch}）
+                            </p>
                         )}
                     </div>
                 )}
@@ -349,7 +409,7 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
                                 <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={sendToTerminal}
+                                    onClick={() => sendToTerminal()}
                                     title={activeSessionId ? "" : t("AICopy")}
                                 >
                                     <Send className="h-4 w-4" />

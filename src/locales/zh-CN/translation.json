@@ -416,5 +416,7 @@
     "AIInsertSelection": "插入终端选中",
     "AIClear": "清空",
     "AIServerContext": "当前上下文：",
-    "Loading": "加载中…"
+    "Loading": "加载中…",
+    "AIPolicyBlocked": "命令被策略拦截",
+    "AIPolicyApproval": "命令需审批"
 }

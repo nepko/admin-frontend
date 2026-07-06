@@ -416,5 +416,7 @@
     "AIInsertSelection": "Insert terminal selection",
     "AIClear": "Clear",
     "AIServerContext": "Server context: ",
-    "Loading": "Loading…"
+    "Loading": "Loading…",
+    "AIPolicyBlocked": "Command blocked by policy",
+    "AIPolicyApproval": "Command requires approval"
 }

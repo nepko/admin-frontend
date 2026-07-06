@@ -14,6 +14,7 @@ import {
     sendTerminalInput,
 } from "@/lib/terminalBus"
 import { Markdown } from "./markdown"
+import { scanCommandAgainstPolicy } from "@/lib/commandPolicyScan"
 
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -225,9 +226,24 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
 
     // 逐行限速注入：避免一次性长串写入 PTY 缓冲导致字符丢失，
     // 每行之间留间隔让远端 shell 处理完毕。无可用终端时退化为复制。
-    const sendToTerminal = (lineDelay = 150) => {
+    const sendToTerminal = async (lineDelay = 150) => {
         const cmd = cleanForTerminal(result)
         if (!cmd) return
+        // 注入前用命令策略做可靠扫描，闭合 plan 中“PTY 字节流 best-effort 不可靠”
+        // 的已知限制：在结构化命令的注入点逐行判定黑名单/白名单/需审批。
+        try {
+            const scan = await scanCommandAgainstPolicy(cmd)
+            if (scan.blocked || scan.needsApproval) {
+                setError(
+                    (scan.blocked ? t("AIPolicyBlocked") : t("AIPolicyApproval")) +
+                        "\n" +
+                        scan.reasons.join("\n"),
+                )
+                return
+            }
+        } catch {
+            // 策略拉取失败时降级放行，避免阻断正常运维。
+        }
         if (!hasTerminalSession(activeSessionId)) {
             navigator.clipboard?.writeText(cmd)
             return

@@ -413,5 +413,6 @@
     "AIDisabledHint": "AI 助手需要管理员在设置中开启并配置大模型后可用。",
     "AISending": "发送中…",
     "AIStop": "停止",
-    "AIInsertSelection": "插入终端选中"
+    "AIInsertSelection": "插入终端选中",
+    "AIClear": "清空"
 }

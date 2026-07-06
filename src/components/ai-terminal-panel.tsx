@@ -1,5 +1,5 @@
-import { Copy, Send, Sparkles, Square, Wand2, X } from "lucide-react"
-import { useCallback, useRef, useState } from "react"
+import { Copy, Eraser, Send, Sparkles, Square, Wand2, X } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import useSetting from "@/hooks/useSetting"
@@ -55,7 +55,15 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
     const { data: config } = useSetting()
     const aiEnabled = !!config?.config?.ai_enabled
 
-    const [mode, setMode] = useState<AIMode>("chat")
+    const [mode, setMode] = useState<AIMode>(() => {
+        try {
+            const m = localStorage.getItem("nezha_ai_mode") as AIMode | null
+            if (m) return m
+        } catch {
+            /* ignore */
+        }
+        return "chat"
+    })
     const [input, setInput] = useState("")
     const [result, setResult] = useState("")
     const [streaming, setStreaming] = useState(false)
@@ -65,13 +73,37 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
         completion_tokens: number
         total_tokens: number
     } | null>(null)
-    const [chat, setChat] = useState<AIChatMessage[]>([])
+    const [chat, setChat] = useState<AIChatMessage[]>(() => {
+        try {
+            const raw = localStorage.getItem("nezha_ai_chat_history")
+            if (raw) return JSON.parse(raw) as AIChatMessage[]
+        } catch {
+            /* ignore */
+        }
+        return []
+    })
 
     const abortRef = useRef<AbortController | null>(null)
 
     const activeKey = useTerminalTabs((s) => s.activeKey)
     const tabs = useTerminalTabs((s) => s.tabs)
     const activeSessionId = tabs.find((x) => x.key === activeKey)?.sessionId
+
+    // 对话与模式持久化：面板关闭后仍可恢复上下文。
+    useEffect(() => {
+        try {
+            localStorage.setItem("nezha_ai_chat_history", JSON.stringify(chat))
+        } catch {
+            /* ignore */
+        }
+    }, [chat])
+    useEffect(() => {
+        try {
+            localStorage.setItem("nezha_ai_mode", mode)
+        } catch {
+            /* ignore */
+        }
+    }, [mode])
 
     const runStream = useCallback(
         (messages: AIChatMessage[], onDelta: (d: string) => void) => {
@@ -163,6 +195,16 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
         setInput((prev) => (prev.trim() ? prev + "\n" + sel.text : sel.text))
     }
 
+    const clearChat = () => {
+        abortRef.current?.abort()
+        abortRef.current = null
+        setStreaming(false)
+        setChat([])
+        setResult("")
+        setError("")
+        setUsage(null)
+    }
+
     const showUsage =
         usage && !streaming && (usage.total_tokens > 0 || usage.prompt_tokens > 0)
 
@@ -187,7 +229,7 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
                 </div>
             )}
 
-            <div className="flex flex-wrap gap-1 px-3 pt-2">
+            <div className="flex flex-wrap items-center gap-1 px-3 pt-2">
                 {MODES.map((m) => (
                     <Button
                         key={m.key}
@@ -203,6 +245,18 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
                         {t(m.labelKey)}
                     </Button>
                 ))}
+                {chat.length > 0 && (
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto h-7 text-xs text-muted-foreground"
+                        onClick={clearChat}
+                        title={t("AIClear")}
+                    >
+                        <Eraser className="h-3.5 w-3.5" />
+                        {t("AIClear")}
+                    </Button>
+                )}
             </div>
 
             <div className="flex-1 space-y-3 overflow-auto p-3">

@@ -413,5 +413,6 @@
     "AIDisabledHint": "The AI assistant requires an admin to enable and configure a model in settings.",
     "AISending": "Sending…",
     "AIStop": "Stop",
-    "AIInsertSelection": "Insert terminal selection"
+    "AIInsertSelection": "Insert terminal selection",
+    "AIClear": "Clear"
 }

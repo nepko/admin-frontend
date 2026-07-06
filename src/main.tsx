@@ -156,6 +156,10 @@ const router = createBrowserRouter([
                 path: "/dashboard/transfer",
                 element: <TransferPage />,
             },
+            {
+                path: "/dashboard/security",
+                element: <SecurityPage />,
+            },
         ],
     },
 ])

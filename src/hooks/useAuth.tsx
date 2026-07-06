@@ -1,5 +1,5 @@
 import { getProfile, login as loginRequest } from "@/api/user"
-import { AuthContextProps } from "@/types"
+import { AuthContextProps, LoginBlockedInfo } from "@/types"
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -14,6 +14,7 @@ const AuthContext = createContext<AuthContextProps>({
     loginOauth2: () => {},
     logout: () => {},
     require2fa: false,
+    loginBlocked: null,
 })
 
 // Admin is role 0 on the backend. A missing/non-numeric role must never
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const setProfile = useMainStore((store) => store.setProfile)
     const [loading, setLoading] = useState(true)
     const [require2fa, setRequire2fa] = useState(false)
+    const [loginBlocked, setLoginBlocked] = useState<LoginBlockedInfo | null>(null)
     const { t } = useTranslation()
 
     // An explicit login/logout (or its getProfile) resolving while the initial
@@ -56,6 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const navigate = useNavigate()
 
     const login = useCallback(async (username: string, password: string, otpToken?: string) => {
+        setLoginBlocked(null)
         try {
             await loginRequest(username, password, otpToken)
             const user = await getProfile()
@@ -68,6 +71,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const msg = error?.message
             if (msg === "2FA_REQUIRED") {
                 setRequire2fa(true)
+                return
+            }
+            if (msg === "LOGIN_BLOCKED" && error?.blocked) {
+                setLoginBlocked(error.blocked as LoginBlockedInfo)
                 return
             }
             if (msg === "ApiErrorUnauthorized" || msg === "Unauthorized") {
@@ -117,8 +124,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             loginOauth2,
             logout,
             require2fa,
+            loginBlocked,
         }),
-        [profile, loading, login, loginOauth2, logout, require2fa],
+        [profile, loading, login, loginOauth2, logout, require2fa, loginBlocked],
     )
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -1,4 +1,4 @@
-import { ModelProfile } from "@/types"
+import { LoginBlockedInfo, ModelProfile } from "@/types"
 
 export interface AuthContextProps {
     profile: ModelProfile | undefined
@@ -7,4 +7,5 @@ export interface AuthContextProps {
     loginOauth2: () => void
     logout: () => void
     require2fa: boolean
+    loginBlocked: LoginBlockedInfo | null
 }

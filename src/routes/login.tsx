@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth"
 import useSetting from "@/hooks/useSetting"
 import { zodResolver } from "@hookform/resolvers/zod"
 import i18next from "i18next"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
@@ -32,8 +32,9 @@ const formSchema = z.object({
 })
 
 function Login() {
-    const { login, loginOauth2, require2fa } = useAuth()
+    const { login, loginOauth2, require2fa, loginBlocked } = useAuth()
     const { data: settingData } = useSetting()
+    const [remaining, setRemaining] = useState(0)
 
     useEffect(() => {
         const oauth2 = new URLSearchParams(window.location.search).get("oauth2")
@@ -41,6 +42,16 @@ function Login() {
             loginOauth2()
         }
     }, [loginOauth2])
+
+    useEffect(() => {
+        if (!loginBlocked) {
+            setRemaining(0)
+            return
+        }
+        setRemaining(loginBlocked.remaining)
+        const id = setInterval(() => setRemaining((r) => (r > 0 ? r - 1 : 0)), 1000)
+        return () => clearInterval(id)
+    }, [loginBlocked])
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -68,6 +79,14 @@ function Login() {
 
     return (
         <div className="mt-28 sm:max-w-sm m-auto max-w-xs">
+            {loginBlocked && (
+                <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300">
+                    <p className="font-semibold">{t("LoginBlockedTitle")}</p>
+                    <p className="mt-1 opacity-90">
+                        {t("LoginBlockedDesc", { seconds: remaining })}
+                    </p>
+                </div>
+            )}
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                     <FormField

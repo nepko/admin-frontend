@@ -51,6 +51,7 @@ const pages = [
     { href: "/dashboard/server-group", label: i18next.t("Group") },
     { href: "/dashboard/transfer", label: i18next.t("Transfer.Title") },
     { href: "/dashboard/security", label: i18next.t("Security") },
+    { href: "/dashboard/command-policy", label: i18next.t("CommandPolicies") },
 ]
 
 export default function Header() {
@@ -266,6 +267,15 @@ export default function Header() {
                                     className={navigationMenuTriggerStyle()}
                                 >
                                     <Link to="/dashboard/security">{t("Security")}</Link>
+                                </NzNavigationMenuLink>
+                            </NavigationMenuItem>
+                            <NavigationMenuItem>
+                                <NzNavigationMenuLink
+                                    asChild
+                                    active={location.pathname === "/dashboard/command-policy"}
+                                    className={navigationMenuTriggerStyle()}
+                                >
+                                    <Link to="/dashboard/command-policy">{t("CommandPolicies")}</Link>
                                 </NzNavigationMenuLink>
                             </NavigationMenuItem>
                         </>

@@ -339,5 +339,16 @@
     "Account": "Account",
     "IP": "IP",
     "Expired": "Expired",
-    "Saved": "Saved"
+    "Saved": "Saved",
+    "CommandPolicies": "Command Policies",
+    "CommandPoliciesDesc": "Blacklist/whitelist rules applied to batch and quick commands.",
+    "CommandApprovals": "Command Approvals",
+    "CommandApprovalsDesc": "High-risk commands awaiting admin approval.",
+    "CommandPolicy": "Command Policy",
+    "Patterns": "Patterns",
+    "PatternsDesc": "One regex per line, matched against the command.",
+    "Whitelist": "Whitelist",
+    "Blacklist": "Blacklist",
+    "RequireApproval": "Require approval",
+    "Applicant": "Applicant"
 }

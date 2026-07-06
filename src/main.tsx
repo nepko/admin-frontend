@@ -26,7 +26,9 @@ import AlertRulePage from "./routes/alert-rule"
 import NotificationPage from "./routes/notification"
 import OnlineUserPage from "./routes/online-user"
 import ProfilePage from "./routes/profile"
+import SecurityPage from "./routes/security"
 import SettingsPage from "./routes/settings"
+import CommandPolicyPage from "./routes/command-policy"
 import TransferPage from "./routes/transfer"
 import UserPage from "./routes/user"
 import WAFPage from "./routes/waf"
@@ -159,6 +161,10 @@ const router = createBrowserRouter([
             {
                 path: "/dashboard/security",
                 element: <SecurityPage />,
+            },
+            {
+                path: "/dashboard/command-policy",
+                element: <CommandPolicyPage />,
             },
         ],
     },

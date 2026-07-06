@@ -339,5 +339,16 @@
     "Account": "账号",
     "IP": "IP",
     "Expired": "已过期",
-    "Saved": "已保存"
+    "Saved": "已保存",
+    "CommandPolicies": "命令策略",
+    "CommandPoliciesDesc": "对批量命令与快捷命令生效的黑名单/白名单规则。",
+    "CommandApprovals": "命令审批",
+    "CommandApprovalsDesc": "等待管理员审批的高危命令。",
+    "CommandPolicy": "命令策略",
+    "Patterns": "匹配规则",
+    "PatternsDesc": "每行一条正则，对命令进行匹配。",
+    "Whitelist": "白名单",
+    "Blacklist": "黑名单",
+    "RequireApproval": "需审批",
+    "Applicant": "申请人"
 }

@@ -1,4 +1,4 @@
-import { getRecording, listRecordings } from "@/api/terminal"
+import { getRecording } from "@/api/terminal"
 import { RecordingChunk, RecordingSessionMeta } from "@/types"
 import { swrFetcher } from "@/api/api"
 import { Badge } from "@/components/ui/badge"

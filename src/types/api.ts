@@ -742,6 +742,15 @@ export interface ModelSetting {
     user_template: string
     /** 前端真实IP */
     web_real_ip_header: string
+    // 二开：终端与文件管理器增强开关
+    /** 是否启用终端会话录制（默认关闭） */
+    terminal_recording_enabled: boolean
+    /** 录制保留天数 */
+    terminal_recording_retention_days: number
+    /** 终端空闲超时（秒，0=不限制） */
+    terminal_idle_timeout_seconds: number
+    /** 是否启用文件管理器增强（默认关闭） */
+    fm_enhanced_enabled: boolean
 }
 
 export interface ModelSettingForm {
@@ -768,6 +777,15 @@ export interface ModelSettingForm {
     user_template?: string
     /** 前端真实IP */
     web_real_ip_header?: string
+    // 二开：终端与文件管理器增强开关
+    /** 是否启用终端会话录制（默认关闭） */
+    terminal_recording_enabled?: boolean
+    /** 录制保留天数 */
+    terminal_recording_retention_days?: number
+    /** 终端空闲超时（秒，0=不限制） */
+    terminal_idle_timeout_seconds?: number
+    /** 是否启用文件管理器增强（默认关闭） */
+    fm_enhanced_enabled?: boolean
 }
 
 export interface ModelSettingResponse {

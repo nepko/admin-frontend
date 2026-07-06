@@ -8,15 +8,19 @@ import {
     Download,
     Edit2,
     Expand,
+    FileArchive,
     FolderClosed,
+    Lock,
     Menu,
     Minus,
     MoreHorizontal,
+    Pencil,
     Play,
     Plus,
     Terminal,
     Trash2,
     Upload,
+    UserCog,
     UserPen,
 } from "lucide-react"
 import { forwardRef } from "react"
@@ -41,6 +45,10 @@ export interface IconButtonProps extends ButtonProps {
         | "minus"
         | "user-pen"
         | "more"
+        | "pencil"
+        | "lock"
+        | "user-cog"
+        | "file-archive"
 }
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>((props, ref) => {
@@ -106,6 +114,18 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>((props,
                 }
                 case "more": {
                     return <MoreHorizontal />
+                }
+                case "pencil": {
+                    return <Pencil />
+                }
+                case "lock": {
+                    return <Lock />
+                }
+                case "user-cog": {
+                    return <UserCog />
+                }
+                case "file-archive": {
+                    return <FileArchive />
                 }
                 }
             })()}

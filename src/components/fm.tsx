@@ -36,7 +36,7 @@ import {
 } from "@/types"
 import { ColumnDef } from "@tanstack/react-table"
 import { Row, flexRender } from "@tanstack/react-table"
-import { Archive, File, FileArchive, Folder, Lock, Pencil, UserCog } from "lucide-react"
+import { Archive, File, Folder } from "lucide-react"
 import { HTMLAttributes, JSX, useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
@@ -60,6 +60,7 @@ import {
     SheetDescription,
     SheetHeader,
     SheetTitle,
+    SheetTrigger,
 } from "./xui/overlayless-sheet"
 import { DataTable } from "./xui/virtulized-data-table"
 

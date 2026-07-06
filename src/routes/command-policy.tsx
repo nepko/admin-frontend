@@ -3,8 +3,6 @@ import {
     approveCommandApproval,
     createCommandPolicy,
     deleteCommandPolicy,
-    getCommandApprovals,
-    getCommandPolicies,
     rejectCommandApproval,
     updateCommandPolicy,
 } from "@/api/command-policy"
@@ -23,7 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/hooks/useAuth"
 import { CommandApproval, CommandPolicy } from "@/types"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import useSWR from "swr"

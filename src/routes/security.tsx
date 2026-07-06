@@ -1,7 +1,5 @@
 import { swrFetcher } from "@/api/api"
 import {
-    getLoginProtection,
-    listLoginLocks,
     unbanIP,
     unlockAccount,
     updateLoginProtection,

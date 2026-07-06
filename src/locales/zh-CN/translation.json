@@ -48,6 +48,7 @@
     "HideForGuest": "对游客隐藏",
     "InstallCommands": "安装命令",
     "Terminal": "终端",
+    "TerminalIdleDisconnect": "终端因空闲超时已断开",
     "Config": "配置",
     "Note": "备注",
     "Success": "成功",
@@ -410,5 +411,7 @@
     "AICopy": "复制",
     "AINotEnabled": "AI 助手未启用：请在「设置 → 终端 AI 助手」中配置 API 地址、Key 与模型",
     "AIDisabledHint": "AI 助手需要管理员在设置中开启并配置大模型后可用。",
-    "AISending": "发送中…"
+    "AISending": "发送中…",
+    "AIStop": "停止",
+    "AIInsertSelection": "插入终端选中"
 }

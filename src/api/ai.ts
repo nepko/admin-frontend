@@ -10,6 +10,7 @@ export interface StreamCallbacks {
     onDelta?: (delta: string) => void
     onDone?: () => void
     onError?: (message: string) => void
+    onUsage?: (usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }) => void
 }
 
 // 同域 POST 需要带上 CSRF 双提交令牌（与 api.ts 中逻辑保持一致）。
@@ -29,6 +30,7 @@ export async function streamAIChat(
     messages: AIChatMessage[],
     opts?: { temperature?: number; max_tokens?: number },
     cb?: StreamCallbacks,
+    signal?: AbortSignal,
 ): Promise<void> {
     let response: Response
     try {
@@ -43,8 +45,14 @@ export async function streamAIChat(
                 temperature: opts?.temperature,
                 max_tokens: opts?.max_tokens,
             }),
+            signal,
         })
     } catch (e: any) {
+        // 用户主动中断（AbortController）不记为错误，仅收尾。
+        if (e?.name === "AbortError") {
+            cb?.onDone?.()
+            return
+        }
         cb?.onError?.(e?.message || "network error")
         return
     }
@@ -89,6 +97,7 @@ export async function streamAIChat(
                         return
                     }
                     if (obj.delta) cb?.onDelta?.(obj.delta)
+                    if (obj.usage) cb?.onUsage?.(obj.usage)
                     if (obj.done) cb?.onDone?.()
                 } catch {
                     /* 跳过无法解析的分片 */

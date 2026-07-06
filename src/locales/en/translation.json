@@ -48,6 +48,7 @@
     "HideForGuest": "Hidden from Visitors",
     "InstallCommands": "Installation command",
     "Terminal": "Terminal",
+    "TerminalIdleDisconnect": "Terminal disconnected due to idle timeout",
     "Config": "Config",
     "Note": "Note",
     "Success": "Success",
@@ -410,5 +411,7 @@
     "AICopy": "Copy",
     "AINotEnabled": "AI assistant is not enabled: configure the API base/key/model under Settings -> Terminal AI Assistant",
     "AIDisabledHint": "The AI assistant requires an admin to enable and configure a model in settings.",
-    "AISending": "Sending…"
+    "AISending": "Sending…",
+    "AIStop": "Stop",
+    "AIInsertSelection": "Insert terminal selection"
 }

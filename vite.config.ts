@@ -34,16 +34,31 @@ export default defineConfig({
     build: {
         cssCodeSplit: true,
         sourcemap: false,
-        chunkSizeWarningLimit: 1500,
-        rollupOptions: {
+        chunkSizeWarningLimit: 7000,
+        rolldownOptions: {
             output: {
                 manualChunks(id: string) {
                     if (!id.includes("node_modules")) return
 
-                    // 提取顶级包名，兼容 scoped packages（如 @radix-ui/react-dialog）
-                    const match = id.match(/node_modules\/(@[^/]+\/[^/]+|[^/]+)/)
-                    const pkg = match ? match[1] : null
+                    // 提取顶级包名：pnpm 下真实路径形如
+                    // .../node_modules/.pnpm/<pkg>@ver/node_modules/<pkg>/...，
+                    // 取最后一个 node_modules/ 之后的片段，兼容 scoped 包（@scope/name）。
+                    const base = id.lastIndexOf("node_modules/")
+                    if (base < 0) return
+                    const rest = id.slice(base + "node_modules/".length)
+                    let pkg: string
+                    if (rest.startsWith("@")) {
+                        pkg = rest.split("/").slice(0, 2).join("/")
+                    } else {
+                        pkg = rest.split("/")[0]
+                    }
                     if (!pkg) return "vendor"
+
+                    // 0. 终端核心：xterm 体积大（gzip ~2.4MB），单独成包以便与业务 vendor 隔离缓存。
+                    // 兼容 pnpm 软链路径（真实安装路径为 @xterm+xterm@ver 形式）。
+                    if (pkg === "@xterm/xterm" || pkg.startsWith("@xterm")) {
+                        return "xterm"
+                    }
 
                     // 1. 核心框架：React 及其紧密依赖（必须合并，避免运行时错误）
                     if (

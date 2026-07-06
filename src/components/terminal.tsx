@@ -29,6 +29,7 @@ import { toast } from "sonner"
 
 import {
     registerTerminalInput,
+    setLastTerminalSelection,
     unregisterTerminalInput,
 } from "@/lib/terminalBus"
 
@@ -45,6 +46,7 @@ interface XtermProps {
 
 export const XtermComponent = forwardRef<HTMLDivElement, XtermProps & JSX.IntrinsicElements["div"]>(
     ({ wsUrl, setClose, sessionId, ...props }, ref) => {
+        const { t } = useTranslation()
         const terminalIdRef = useRef<HTMLDivElement>(null)
         const terminalRef = useRef<Terminal | null>(null)
         const wsRef = useRef<WebSocket | null>(null)
@@ -119,6 +121,10 @@ export const XtermComponent = forwardRef<HTMLDivElement, XtermProps & JSX.Intrin
             terminal.loadAddon(attachAddon)
             terminal.loadAddon(fitAddon)
             terminal.open(container)
+            // 二开：把终端选区上报到 terminalBus，供 AI 助手「解释选中 / 诊断」模式复用。
+            terminal.onSelectionChange(() => {
+                if (sessionId) setLastTerminalSelection(sessionId, terminal.getSelection())
+            })
             window.addEventListener("resize", onResize)
 
             ws.onopen = () => {
@@ -129,10 +135,14 @@ export const XtermComponent = forwardRef<HTMLDivElement, XtermProps & JSX.Intrin
                     })
                 }
             }
-            ws.onclose = () => {
+            ws.onclose = (e: CloseEvent) => {
                 if (sessionId) unregisterTerminalInput(sessionId)
                 terminal.dispose()
                 setClose(true)
+                // 二开：识别后端空闲超时断开（close code 4000 / reason idle-timeout）并提示。
+                if (e.code === 4000 || (e.reason && e.reason.includes("idle"))) {
+                    toast.warning(t("TerminalIdleDisconnect"))
+                }
             }
             ws.onerror = (e) => {
                 console.error(e)

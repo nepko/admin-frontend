@@ -5,6 +5,9 @@
 type InputSender = (text: string) => void
 
 const registry = new Map<string, InputSender>()
+// lastSelection 暂存最近一次终端选区（含来源会话），供 AI 助手的
+// 「解释选中 / 错误诊断」模式一键填充。
+let lastSelection: { sessionId: string; text: string } = { sessionId: "", text: "" }
 
 export function registerTerminalInput(sessionId: string, send: InputSender): void {
     registry.set(sessionId, send)
@@ -21,4 +24,14 @@ export function sendTerminalInput(sessionId: string | undefined, text: string): 
     if (!send) return false
     send(text)
     return true
+}
+
+// setLastTerminalSelection 记录某会话的当前选区。
+export function setLastTerminalSelection(sessionId: string, text: string): void {
+    lastSelection = { sessionId, text }
+}
+
+// getLastTerminalSelection 返回最近一次选区及其来源会话。
+export function getLastTerminalSelection(): { sessionId: string; text: string } {
+    return lastSelection
 }

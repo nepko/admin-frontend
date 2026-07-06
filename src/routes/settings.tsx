@@ -56,6 +56,12 @@ const settingFormSchema = z.object({
     enable_ip_change_notification: asOptionalField(z.boolean()),
     enable_plain_ip_in_notification: asOptionalField(z.boolean()),
     enable_mcp: asOptionalField(z.boolean()),
+
+    // 二开：终端与文件管理器增强开关
+    terminal_recording_enabled: asOptionalField(z.boolean()),
+    terminal_recording_retention_days: asOptionalField(z.coerce.number().int()),
+    terminal_idle_timeout_seconds: asOptionalField(z.coerce.number().int()),
+    fm_enhanced_enabled: asOptionalField(z.boolean()),
 })
 
 export default function SettingsPage() {
@@ -561,6 +567,73 @@ export default function SettingsPage() {
                                 </FormItem>
                             )}
                         />
+                        <Card className="w-full">
+                            <CardContent className="space-y-4 pt-4">
+                                <div className="text-sm font-medium">{t("TerminalFileSettings")}</div>
+                                <FormField
+                                    control={form.control}
+                                    name="terminal_recording_enabled"
+                                    render={({ field }) => (
+                                        <FormItem className="flex items-center justify-between">
+                                            <Label className="text-sm">{t("TerminalRecording")}</Label>
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="terminal_recording_retention_days"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label className="text-sm">
+                                                {t("RecordingRetentionDays")}
+                                            </Label>
+                                            <Input
+                                                type="number"
+                                                {...field}
+                                                onChange={(e) =>
+                                                    field.onChange(Number(e.target.value))
+                                                }
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="terminal_idle_timeout_seconds"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label className="text-sm">
+                                                {t("IdleTimeoutSeconds")}
+                                            </Label>
+                                            <Input
+                                                type="number"
+                                                {...field}
+                                                onChange={(e) =>
+                                                    field.onChange(Number(e.target.value))
+                                                }
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="fm_enhanced_enabled"
+                                    render={({ field }) => (
+                                        <FormItem className="flex items-center justify-between">
+                                            <Label className="text-sm">{t("FMEnhanced")}</Label>
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
+                            </CardContent>
+                        </Card>
                         <Button type="submit">{t("Confirm")}</Button>
                     </form>
                 </Form>

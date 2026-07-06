@@ -18,6 +18,7 @@ import LoginPage from "./routes/login"
 import ServerPage from "./routes/server"
 import ServicePage from "./routes/service"
 import { TerminalPage } from "./components/terminal"
+import TerminalSessionsPage from "./routes/terminal-sessions"
 import DDNSPage from "./routes/ddns"
 import NATPage from "./routes/nat"
 import NotificationGroupPage from "./routes/notification-group"
@@ -114,6 +115,14 @@ const router = createBrowserRouter([
             {
                 path: "/dashboard/terminal/:id",
                 element: <TerminalPage />,
+            },
+            {
+                path: "/dashboard/terminal",
+                element: (
+                    <ServerProvider withServer>
+                        <TerminalSessionsPage />
+                    </ServerProvider>
+                ),
             },
             {
                 path: "/dashboard/notification",

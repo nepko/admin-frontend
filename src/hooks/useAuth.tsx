@@ -13,6 +13,7 @@ const AuthContext = createContext<AuthContextProps>({
     login: () => {},
     loginOauth2: () => {},
     logout: () => {},
+    require2fa: false,
 })
 
 // Admin is role 0 on the backend. A missing/non-numeric role must never
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const profile = useMainStore((store) => store.profile)
     const setProfile = useMainStore((store) => store.setProfile)
     const [loading, setLoading] = useState(true)
+    const [require2fa, setRequire2fa] = useState(false)
     const { t } = useTranslation()
 
     // An explicit login/logout (or its getProfile) resolving while the initial
@@ -53,16 +55,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const navigate = useNavigate()
 
-    const login = useCallback(async (username: string, password: string) => {
+    const login = useCallback(async (username: string, password: string, otpToken?: string) => {
         try {
-            await loginRequest(username, password)
+            await loginRequest(username, password, otpToken)
             const user = await getProfile()
             authEpoch.current++
             user.role = normalizeRole(user.role)
             setProfile(user)
+            setRequire2fa(false)
             navigate("/dashboard")
         } catch (error: any) {
             const msg = error?.message
+            if (msg === "2FA_REQUIRED") {
+                setRequire2fa(true)
+                return
+            }
             if (msg === "ApiErrorUnauthorized" || msg === "Unauthorized") {
                 toast(t("InvalidUsernameOrPassword"))
             } else {
@@ -109,8 +116,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             login,
             loginOauth2,
             logout,
+            require2fa,
         }),
-        [profile, loading, login, loginOauth2, logout],
+        [profile, loading, login, loginOauth2, logout, require2fa],
     )
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

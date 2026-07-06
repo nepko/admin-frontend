@@ -6,8 +6,8 @@ export const getProfile = async (): Promise<ModelProfile> => {
     return fetcher<ModelProfile>(FetcherMethod.GET, "/api/v1/profile", null)
 }
 
-export const login = async (username: string, password: string): Promise<void> => {
-    return fetcher<void>(FetcherMethod.POST, "/api/v1/login", { username, password })
+export const login = async (username: string, password: string, otpToken?: string): Promise<void> => {
+    return fetcher<void>(FetcherMethod.POST, "/api/v1/login", { username, password, otp_token: otpToken })
 }
 
 export const createUser = async (data: ModelUserForm): Promise<number> => {

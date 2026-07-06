@@ -242,6 +242,16 @@ export interface ModelCreateTerminalResponse {
     session_id: string
 }
 
+export interface ModelTerminalSessionInfo {
+    session_id: string
+    server_id: number
+    server_name: string
+    creator_user_id: number
+    created_at: number
+    closed_at: number
+    active: boolean
+}
+
 export interface ModelCron {
     command: string
     /** 计划任务覆盖范围 (0:仅覆盖特定服务器 1:仅忽略特定服务器 2:由触发该计划任务的服务器执行) */

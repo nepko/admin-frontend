@@ -315,5 +315,9 @@
     "NameRequired": "名称必填。",
     "Revoke": "吊销",
     "Copied": "已复制到剪贴板",
-    "Scopes": "权限"
+    "Scopes": "权限",
+    "TerminalSessions": "终端会话",
+    "TerminalSessionsDescription": "查看 WebShell 终端会话记录和当前活动状态",
+    "Closed": "已关闭",
+    "QuickPath": "常用路径"
 }

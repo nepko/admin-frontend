@@ -28,10 +28,11 @@ const formSchema = z.object({
     password: z.string().min(1, {
         message: i18next.t("Results.PasswordRequired"),
     }),
+    otp_token: z.string().optional(),
 })
 
 function Login() {
-    const { login, loginOauth2 } = useAuth()
+    const { login, loginOauth2, require2fa } = useAuth()
     const { data: settingData } = useSetting()
 
     useEffect(() => {
@@ -46,11 +47,12 @@ function Login() {
         defaultValues: {
             username: "",
             password: "",
+            otp_token: "",
         },
     })
 
     function onSubmit(values: z.infer<typeof formSchema>) {
-        login(values.username, values.password)
+        login(values.username, values.password, values.otp_token || undefined)
     }
 
     async function loginWith(provider: string) {
@@ -99,6 +101,21 @@ function Login() {
                             </FormItem>
                         )}
                     />
+                    {require2fa && (
+                        <FormField
+                            control={form.control}
+                            name="otp_token"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>OTP Code</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="123456" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    )}
                     <Button
                         type="submit"
                         className="w-full rounded-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
@@ -108,15 +125,15 @@ function Login() {
                 </form>
                 {settingData?.config?.oauth2_providers &&
                     settingData?.config?.oauth2_providers.length > 0 && (
-                    <section className="flex items-center my-3 w-full">
-                        <Separator className="flex-1" />
-                        <div className="flex justify-center text-xs text-muted-foreground w-full max-w-[100px]">
-                                OAuth2
-                        </div>
-                        <Separator className="flex-1" />
-                    </section>
-                )}
-            </Form>
+                        <section className="flex items-center my-3 w-full">
+                            <Separator className="flex-1" />
+                            <div className="flex justify-center text-xs text-muted-foreground w-full max-w-[100px]">
+                                    OAuth2
+                            </div>
+                            <Separator className="flex-1" />
+                        </section>
+                    )}
+                </Form>
             <div className="mt-3 flex flex-col gap-3">
                 {settingData?.config?.oauth2_providers?.map((p: string) => (
                     <Button

@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner"
 import useSetting from "@/hooks/useSetting"
 import i18n from "@/lib/i18n"
 import { InjectContext } from "@/lib/inject"
+import { Suspense } from "react"
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { Outlet } from "react-router-dom"
@@ -42,7 +43,15 @@ export default function Root() {
                 <div>
                     <Header />
                     <div className="max-w-5xl mx-auto">
-                        <Outlet />
+                        <Suspense
+                            fallback={
+                                <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+                                    {t("Loading")}
+                                </div>
+                            }
+                        >
+                            <Outlet />
+                        </Suspense>
                     </div>
                 </div>
                 <footer className="mx-5 py-5 text-foreground/50 font-light text-xs text-center">

@@ -1,4 +1,5 @@
 // NOTE: Do not modify the import order unless absolutely necessary.
+import { lazy } from "react"
 import { createRoot } from "react-dom/client"
 import { RouterProvider, createBrowserRouter } from "react-router-dom"
 
@@ -11,31 +12,36 @@ import { ServerProvider } from "./hooks/useServer"
 
 import Root from "./routes/root"
 import ErrorPage from "./error-page"
-
 import ProtectedRoute from "./routes/protect"
-import CronPage from "./routes/cron"
-import LoginPage from "./routes/login"
-import ServerPage from "./routes/server"
-import ServicePage from "./routes/service"
-import { TerminalPage } from "./components/terminal"
-import TerminalSessionsPage from "./routes/terminal-sessions"
-import DDNSPage from "./routes/ddns"
-import NATPage from "./routes/nat"
-import NotificationGroupPage from "./routes/notification-group"
-import ServerGroupPage from "./routes/server-group"
-import AlertRulePage from "./routes/alert-rule"
-import NotificationPage from "./routes/notification"
-import OnlineUserPage from "./routes/online-user"
-import ProfilePage from "./routes/profile"
-import SecurityPage from "./routes/security"
-import SettingsPage from "./routes/settings"
-import CommandPolicyPage from "./routes/command-policy"
-import RecordingsPage from "./routes/recordings"
-import TransferPage from "./routes/transfer"
-import UserPage from "./routes/user"
-import WAFPage from "./routes/waf"
-import ApiTokensPage from "./routes/api-tokens"
 
+// 路由级懒加载：把各页面拆分为独立 chunk，首屏仅加载布局与当前路由，
+// 显著降低初始 JS 体积与内存占用（其余页面访问时按需加载）。
+const LoginPage = lazy(() => import("./routes/login"))
+const ServerPage = lazy(() => import("./routes/server"))
+const ServicePage = lazy(() => import("./routes/service"))
+const CronPage = lazy(() => import("./routes/cron"))
+const AlertRulePage = lazy(() => import("./routes/alert-rule"))
+const DDNSPage = lazy(() => import("./routes/ddns"))
+const NATPage = lazy(() => import("./routes/nat"))
+const ServerGroupPage = lazy(() => import("./routes/server-group"))
+const NotificationGroupPage = lazy(() => import("./routes/notification-group"))
+const TerminalPage = lazy(() =>
+    import("./components/terminal").then((m) => ({ default: m.TerminalPage })),
+)
+const TerminalSessionsPage = lazy(() => import("./routes/terminal-sessions"))
+const NotificationPage = lazy(() => import("./routes/notification"))
+const ProfilePage = lazy(() => import("./routes/profile"))
+const SettingsPage = lazy(() => import("./routes/settings"))
+const UserPage = lazy(() => import("./routes/user"))
+const WAFPage = lazy(() => import("./routes/waf"))
+const OnlineUserPage = lazy(() => import("./routes/online-user"))
+const ApiTokensPage = lazy(() => import("./routes/api-tokens"))
+const TransferPage = lazy(() => import("./routes/transfer"))
+const SecurityPage = lazy(() => import("./routes/security"))
+const CommandPolicyPage = lazy(() => import("./routes/command-policy"))
+const RecordingsPage = lazy(() => import("./routes/recordings"))
+
+// 懒加载兜底由 Root 内的 <Outlet/> 外 <Suspense> 统一处理。
 const router = createBrowserRouter([
     {
         path: "/dashboard",

@@ -82,6 +82,18 @@ export default defineConfig({
                         return "ui"
                     }
 
+                    // 2.5 局部重型 UI 库：仅在个别路由使用，独立分包以便随
+                    // 懒加载路由按需加载，避免塞进共享 vendor 被首屏强制拉取。
+                    if (
+                        pkg === "react-day-picker" ||
+                        pkg === "vaul" ||
+                        pkg === "cmdk" ||
+                        pkg === "react-virtuoso" ||
+                        pkg.startsWith("@tanstack")
+                    ) {
+                        return "lib-ui-heavy"
+                    }
+
                     // 3. 表单与校验
                     if (
                         pkg === "react-hook-form" ||

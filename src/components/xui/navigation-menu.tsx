@@ -2,7 +2,6 @@ import {
     NavigationMenuLinkProps,
     NavigationMenuTriggerProps,
 } from "@radix-ui/react-navigation-menu"
-import { motion } from "framer-motion"
 
 import {
     NavigationMenuLink,
@@ -23,10 +22,7 @@ export const NzNavigationMenuLink = (
                 }
             />
             {props.active && (
-                <motion.div
-                    layoutId="tab-underline"
-                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-black dark:bg-white"
-                />
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-black transition-all dark:bg-white" />
             )}
         </div>
     )

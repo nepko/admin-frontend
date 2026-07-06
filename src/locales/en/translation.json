@@ -415,5 +415,6 @@
     "AIStop": "Stop",
     "AIInsertSelection": "Insert terminal selection",
     "AIClear": "Clear",
-    "AIServerContext": "Server context: "
+    "AIServerContext": "Server context: ",
+    "Loading": "Loading…"
 }

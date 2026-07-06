@@ -415,5 +415,6 @@
     "AIStop": "停止",
     "AIInsertSelection": "插入终端选中",
     "AIClear": "清空",
-    "AIServerContext": "当前上下文："
+    "AIServerContext": "当前上下文：",
+    "Loading": "加载中…"
 }

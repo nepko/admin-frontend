@@ -1,4 +1,4 @@
-import { createFM } from "@/api/fm"
+import { createFM, getFMEnhanced } from "@/api/fm"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -36,13 +36,22 @@ import {
 } from "@/types"
 import { ColumnDef } from "@tanstack/react-table"
 import { Row, flexRender } from "@tanstack/react-table"
-import { File, Folder } from "lucide-react"
+import { Archive, File, FileArchive, Folder, Lock, Pencil, UserCog } from "lucide-react"
 import { HTMLAttributes, JSX, useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
+import useSWR from "swr"
 
 import { Button } from "./ui/button"
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "./ui/dialog"
 import { TableCell, TableRow } from "./ui/table"
+import { Textarea } from "./ui/textarea"
 import { Filepath } from "./xui/filepath"
 import { IconButton } from "./xui/icon-button"
 import {
@@ -51,7 +60,6 @@ import {
     SheetDescription,
     SheetHeader,
     SheetTitle,
-    SheetTrigger,
 } from "./xui/overlayless-sheet"
 import { DataTable } from "./xui/virtulized-data-table"
 
@@ -84,6 +92,9 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
     const [dOpen, setdOpen] = useState(false)
     const [uOpen, setuOpen] = useState(false)
 
+    const { data: enhRes } = useSWR("/api/v1/file/enhanced", getFMEnhanced)
+    const enhanced = !!enhRes?.enabled
+
     const columns: ColumnDef<FMEntry>[] = [
         {
             id: "type",
@@ -106,17 +117,44 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
             header: () => <span>{t("Actions")}</span>,
             id: "download",
             cell: ({ row }) => {
-                return row.original.type == 0 ? (
-                    <IconButton
-                        variant="ghost"
-                        icon="download"
-                        onClick={() => {
-                            if (!dOpen) setdOpen(true)
-                            downloadFile(row.original.name)
-                        }}
-                    />
-                ) : (
-                    <Button size="icon" variant="ghost" className="pointer-events-none" />
+                if (row.original.type != 0) return <span />
+                return (
+                    <div className="flex gap-1">
+                        <IconButton
+                            variant="ghost"
+                            icon="download"
+                            onClick={() => {
+                                if (!dOpen) setdOpen(true)
+                                downloadFile(row.original.name)
+                            }}
+                        />
+                        {enhanced && (
+                            <>
+                                <IconButton
+                                    variant="ghost"
+                                    icon="pencil"
+                                    onClick={() => editFile(row.original.name)}
+                                />
+                                <IconButton
+                                    variant="ghost"
+                                    icon="lock"
+                                    onClick={() => openChmod(`${currentPath}/${row.original.name}`)}
+                                />
+                                <IconButton
+                                    variant="ghost"
+                                    icon="user-cog"
+                                    onClick={() => openChown(`${currentPath}/${row.original.name}`)}
+                                />
+                                <IconButton
+                                    variant="ghost"
+                                    icon="file-archive"
+                                    onClick={() =>
+                                        archive(FMOpcode.Zip, `${currentPath}/${row.original.name}`, `${currentPath}/${row.original.name}.zip`)
+                                    }
+                                />
+                            </>
+                        )}
+                    </div>
                 )
             },
         },
@@ -155,6 +193,8 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
     const firstChunk = useRef(true)
     const handleReady = useRef(false)
     const currentBasename = useRef("temp")
+    const editModeRef = useRef(false)
+    const opInProgress = useRef<string | null>(null)
 
     const waitForHandleReady = async () => {
         while (!handleReady.current) {
@@ -177,12 +217,24 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
                     handleReady.current = false
 
                     if (event.data.blob && event.data.fileName) {
-                        const url = URL.createObjectURL(event.data.blob)
-                        const anchor = document.createElement("a")
-                        anchor.href = url
-                        anchor.download = event.data.fileName
-                        anchor.click()
-                        URL.revokeObjectURL(url)
+                        if (editModeRef.current) {
+                            editModeRef.current = false
+                            try {
+                                const text = await event.data.blob.text()
+                                setEditContent(text)
+                                setEditTarget(event.data.fileName)
+                                setEditOpen(true)
+                            } catch (e) {
+                                toast(t("Error"), { description: String(e) })
+                            }
+                        } else {
+                            const url = URL.createObjectURL(event.data.blob)
+                            const anchor = document.createElement("a")
+                            anchor.href = url
+                            anchor.download = event.data.fileName
+                            anchor.click()
+                            URL.revokeObjectURL(url)
+                        }
                     }
 
                     firstChunk.current = true
@@ -193,9 +245,7 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
         }
 
         const handleBeforeUnload = () => {
-            worker.postMessage({
-                operation: 3,
-            })
+            worker.postMessage({ operation: 3 })
         }
 
         window.addEventListener("beforeunload", handleBeforeUnload)
@@ -260,9 +310,13 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
                         setPath(path)
                         setFMEntries(fmList)
                     } else if (arraysEqual(identifier, FMIdentifier.complete)) {
-                        // Upload completed
-                        setuOpen(false)
+                        // 上传或其它写操作完成
                         listFile()
+                        if (opInProgress.current) {
+                            toast.success(`${opInProgress.current} ${t("Success")}`)
+                            opInProgress.current = null
+                        }
+                        setuOpen(false)
                     } else {
                         throw new Error(tRef.current("Results.UnknownIdentifier"))
                     }
@@ -298,8 +352,9 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
         }
     }, [currentPath, listFile])
 
-    const downloadFile = (basename: string) => {
+    const downloadFile = (basename: string, editMode = false) => {
         currentBasename.current = basename
+        editModeRef.current = editMode
         const prefix = new Int8Array([FMOpcode.Download])
         const filePathMessage = new TextEncoder().encode(`${currentPath}/${basename}`)
 
@@ -308,6 +363,10 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
         msg.set(filePathMessage, prefix.length)
 
         wsRef.current?.send(msg)
+    }
+
+    const editFile = (basename: string) => {
+        downloadFile(basename, true)
     }
 
     const uploadFile = async (file: File) => {
@@ -325,6 +384,63 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
             if (arrayBuffer) wsRef.current?.send(arrayBuffer)
             offset += chunkSize
         }
+    }
+
+    // 二开：增强操作（编辑/权限/属主/压缩）。发送 op 消息，等待 agent 回包 NZUP。
+    const sendEnhanced = (buf: ArrayBuffer, label: string) => {
+        opInProgress.current = label
+        wsRef.current?.send(buf)
+    }
+
+    const archive = (opcode: FMOpcode, src: string, dst: string) => {
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+            toast(t("Error"), { description: t("Results.UnExpectedError") })
+            return
+        }
+        sendEnhanced(fm.buildArchiveMessage(opcode, src, dst), opcode === FMOpcode.Zip ? t("Zip") : t("Unzip"))
+    }
+
+    // 在线编辑对话框
+    const [editOpen, setEditOpen] = useState(false)
+    const [editTarget, setEditTarget] = useState("")
+    const [editContent, setEditContent] = useState("")
+    const saveEdit = () => {
+        sendEnhanced(fm.buildEditMessage({ path: editTarget, content: editContent }), t("Save"))
+        setEditOpen(false)
+    }
+
+    // chmod 对话框
+    const [chmodOpen, setChmodOpen] = useState(false)
+    const [chmodPath, setChmodPath] = useState("")
+    const [chmodMode, setChmodMode] = useState("644")
+    const openChmod = (path: string) => {
+        setChmodPath(path)
+        setChmodOpen(true)
+    }
+    const saveChmod = () => {
+        const mode = parseInt(chmodMode, 8)
+        if (isNaN(mode)) {
+            toast(t("Error"), { description: t("Results.UnExpectedError") })
+            return
+        }
+        sendEnhanced(fm.buildChmodMessage({ path: chmodPath, mode }), t("Chmod"))
+        setChmodOpen(false)
+    }
+
+    // chown 对话框
+    const [chownOpen, setChownOpen] = useState(false)
+    const [chownPath, setChownPath] = useState("")
+    const [chownUid, setChownUid] = useState("0")
+    const [chownGid, setChownGid] = useState("0")
+    const openChown = (path: string) => {
+        setChownPath(path)
+        setChownOpen(true)
+    }
+    const saveChown = () => {
+        const uid = parseInt(chownUid, 10) || 0
+        const gid = parseInt(chownGid, 10) || 0
+        sendEnhanced(fm.buildChownMessage({ path: chownPath, uid, gid }), t("Chown"))
+        setChownOpen(false)
     }
 
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -358,6 +474,16 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
                             >
                                 {t("CopyPath")}
                             </DropdownMenuItem>
+                            {enhanced && (
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        archive(FMOpcode.Zip, currentPath, `${currentPath}/archive.zip`)
+                                    }
+                                >
+                                    <Archive className="h-4 w-4 mr-2" />
+                                    {t("ZipCurrentDir")}
+                                </DropdownMenuItem>
+                            )}
                             <AlertDialogTrigger asChild>
                                 <DropdownMenuItem>{t("Goto")}</DropdownMenuItem>
                             </AlertDialogTrigger>
@@ -411,6 +537,11 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
                     />
                 </div>
             </div>
+            {enhanced && (
+                <p className="text-xs text-muted-foreground mt-2">
+                    {t("FMEnhancedHint")}
+                </p>
+            )}
             <Filepath path={currentPath} setPath={setPath} />
             <AlertDialog open={dOpen}>
                 <AlertDialogContent>
@@ -428,6 +559,83 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
                     </AlertDialogHeader>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* 在线编辑 */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>{t("Edit")} · {editTarget}</DialogTitle>
+                    </DialogHeader>
+                    <Textarea
+                        className="h-72 font-mono text-sm"
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                    />
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditOpen(false)}>
+                            {t("Close")}
+                        </Button>
+                        <Button onClick={saveEdit}>{t("Save")}</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* chmod */}
+            <Dialog open={chmodOpen} onOpenChange={setChmodOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>{t("Chmod")}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-sm">{t("Path")}</label>
+                            <Input value={chmodPath} onChange={(e) => setChmodPath(e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-sm">{t("ModeOctal")}</label>
+                            <Input value={chmodMode} onChange={(e) => setChmodMode(e.target.value)} />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setChmodOpen(false)}>
+                            {t("Close")}
+                        </Button>
+                        <Button onClick={saveChmod}>{t("Save")}</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* chown */}
+            <Dialog open={chownOpen} onOpenChange={setChownOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>{t("Chown")}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-sm">{t("Path")}</label>
+                            <Input value={chownPath} onChange={(e) => setChownPath(e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-sm">UID</label>
+                                <Input value={chownUid} onChange={(e) => setChownUid(e.target.value)} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm">GID</label>
+                                <Input value={chownGid} onChange={(e) => setChownGid(e.target.value)} />
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setChownOpen(false)}>
+                            {t("Close")}
+                        </Button>
+                        <Button onClick={saveChown}>{t("Save")}</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <DataTable columns={columns} data={fmEntires} rowComponent={tableRowComponent} />
         </div>
     )

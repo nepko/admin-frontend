@@ -358,5 +358,14 @@
     "Chunks": "分块",
     "Start": "开始",
     "End": "结束",
-    "PermissionDenied": "无权限"
+    "PermissionDenied": "无权限",
+    "Edit": "编辑",
+    "Path": "路径",
+    "Zip": "压缩",
+    "Unzip": "解压",
+    "Chmod": "修改权限",
+    "Chown": "修改属主",
+    "ModeOctal": "权限(八进制)",
+    "FMEnhancedHint": "在线编辑/权限/压缩为增强功能，需 agent 端支持对应协议（默认关闭）。",
+    "ZipCurrentDir": "压缩当前目录"
 }

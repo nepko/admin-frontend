@@ -358,5 +358,14 @@
     "Chunks": "Chunks",
     "Start": "Start",
     "End": "End",
-    "PermissionDenied": "Permission denied"
+    "PermissionDenied": "Permission denied",
+    "Edit": "Edit",
+    "Path": "Path",
+    "Zip": "Zip",
+    "Unzip": "Unzip",
+    "Chmod": "Chmod",
+    "Chown": "Chown",
+    "ModeOctal": "Mode (octal)",
+    "FMEnhancedHint": "Online edit / chmod / chown / zip are enhanced ops requiring agent support (disabled by default).",
+    "ZipCurrentDir": "Zip current directory"
 }

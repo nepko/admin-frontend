@@ -116,6 +116,61 @@ export const fm = {
         return header
     },
 
+    // 二开：文件管理器增强 —— 构造前端→agent 的增强 op 二进制消息。
+    // 协议详见后端 cmd/dashboard/controller/fm.go 的契约注释；agent 未实现时这些消息无响应。
+
+    // 在线编辑：写入 content 到 path
+    buildEditMessage: ({ path, content }: { path: string; content: string }) => {
+        const pathBytes = new TextEncoder().encode(path)
+        const contentBytes = new TextEncoder().encode(content)
+        const buf = new ArrayBuffer(1 + 4 + pathBytes.length + contentBytes.length)
+        const view = new DataView(buf)
+        view.setUint8(0, FMOpcode.Edit)
+        view.setUint32(1, pathBytes.length, false)
+        new Uint8Array(buf, 5).set(pathBytes)
+        new Uint8Array(buf, 5 + pathBytes.length).set(contentBytes)
+        return buf
+    },
+
+    // 修改权限：mode 为八进制数值（如 0o644）
+    buildChmodMessage: ({ path, mode }: { path: string; mode: number }) => {
+        const pathBytes = new TextEncoder().encode(path)
+        const buf = new ArrayBuffer(1 + 4 + pathBytes.length + 4)
+        const view = new DataView(buf)
+        view.setUint8(0, FMOpcode.Chmod)
+        view.setUint32(1, pathBytes.length, false)
+        new Uint8Array(buf, 5).set(pathBytes)
+        view.setUint32(5 + pathBytes.length, mode >>> 0, false)
+        return buf
+    },
+
+    // 修改属主
+    buildChownMessage: ({ path, uid, gid }: { path: string; uid: number; gid: number }) => {
+        const pathBytes = new TextEncoder().encode(path)
+        const buf = new ArrayBuffer(1 + 4 + pathBytes.length + 4 + 4)
+        const view = new DataView(buf)
+        view.setUint8(0, FMOpcode.Chown)
+        view.setUint32(1, pathBytes.length, false)
+        new Uint8Array(buf, 5).set(pathBytes)
+        view.setUint32(5 + pathBytes.length, uid >>> 0, false)
+        view.setUint32(9 + pathBytes.length, gid >>> 0, false)
+        return buf
+    },
+
+    // 压缩/解压：src 源路径，dst 目标路径
+    buildArchiveMessage: (opcode: FMOpcode, src: string, dst: string) => {
+        const srcBytes = new TextEncoder().encode(src)
+        const dstBytes = new TextEncoder().encode(dst)
+        const buf = new ArrayBuffer(1 + 4 + srcBytes.length + 4 + dstBytes.length)
+        const view = new DataView(buf)
+        view.setUint8(0, opcode)
+        view.setUint32(1, srcBytes.length, false)
+        new Uint8Array(buf, 5).set(srcBytes)
+        view.setUint32(5 + srcBytes.length, dstBytes.length, false)
+        new Uint8Array(buf, 9 + srcBytes.length).set(dstBytes)
+        return buf
+    },
+
     readFileAsArrayBuffer: async (blob: Blob): Promise<string | ArrayBuffer | null> => {
         const reader = new FileReader()
 

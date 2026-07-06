@@ -7,6 +7,12 @@ export enum FMOpcode {
     List,
     Download,
     Upload,
+    // 二开：文件管理器增强 op（真实实现需 nezhahq/agent 支持，见后端 fm.go 协议契约）
+    Edit, // 在线编辑：写入文件内容
+    Chmod, // 修改权限
+    Chown, // 修改属主
+    Zip, // 压缩打包
+    Unzip, // 解压
 }
 
 export const FMIdentifier = {

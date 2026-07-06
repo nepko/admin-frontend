@@ -108,6 +108,12 @@ export default defineConfig({
                         return "i18n"
                     }
 
+                    // 4.5 date-fns：仅被懒加载的 react-day-picker 间接使用，
+                    // 独立分包使其不进入首屏 vendor，随日期选择路由按需加载。
+                    if (pkg === "date-fns") {
+                        return "date-fns"
+                    }
+
                     // 5. 数据获取
                     if (pkg === "swr") {
                         return "data"

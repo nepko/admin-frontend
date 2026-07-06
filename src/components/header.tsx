@@ -21,7 +21,6 @@ import { useMediaQuery } from "@/hooks/useMediaQuery"
 import { cn } from "@/lib/utils"
 import i18next from "i18next"
 import { LogOut, Settings, User2 } from "lucide-react"
-import { DateTime } from "luxon"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useLocation, useNavigate } from "react-router-dom"
@@ -435,12 +434,15 @@ const useInterval = (callback: () => void, delay?: number | null) => {
 function Overview() {
     const { t } = useTranslation()
     const profile = useMainStore((store) => store.profile)
-    const timeOption = { ...DateTime.TIME_SIMPLE, hour12: true }
-    const [timeString, setTimeString] = useState(
-        DateTime.now().setLocale("en-US").toLocaleString(timeOption),
-    )
+    // 时钟显示改用浏览器原生 Intl，避免引入 luxon 这类重依赖（仅为一行时间文本）。
+    const timeFmt = new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+    })
+    const [timeString, setTimeString] = useState(() => timeFmt.format(new Date()))
     useInterval(() => {
-        setTimeString(DateTime.now().setLocale("en-US").toLocaleString(timeOption))
+        setTimeString(timeFmt.format(new Date()))
     }, 1000)
     return (
         <section className={"flex flex-col"}>

@@ -42,14 +42,18 @@ interface XtermProps {
     setClose: React.Dispatch<React.SetStateAction<boolean>>
     /** 会话 ID，用于把该终端注册到 terminalBus，供 AI 助手注入命令。 */
     sessionId?: string
+    /** 连接断开时回调（用于多标签场景标记该标签已断线）。 */
+    onDisconnect?: () => void
 }
 
 export const XtermComponent = forwardRef<HTMLDivElement, XtermProps & JSX.IntrinsicElements["div"]>(
-    ({ wsUrl, setClose, sessionId, ...props }, ref) => {
+    ({ wsUrl, setClose, sessionId, onDisconnect, ...props }, ref) => {
         const { t } = useTranslation()
         const terminalIdRef = useRef<HTMLDivElement>(null)
         const terminalRef = useRef<Terminal | null>(null)
         const wsRef = useRef<WebSocket | null>(null)
+        const onDisconnectRef = useRef(onDisconnect)
+        onDisconnectRef.current = onDisconnect
 
         useImperativeHandle(ref, () => {
             return {
@@ -139,6 +143,7 @@ export const XtermComponent = forwardRef<HTMLDivElement, XtermProps & JSX.Intrin
                 if (sessionId) unregisterTerminalInput(sessionId)
                 terminal.dispose()
                 setClose(true)
+                onDisconnectRef.current?.()
                 // 二开：识别后端空闲超时断开（close code 4000 / reason idle-timeout）并提示。
                 if (e.code === 4000 || (e.reason && e.reason.includes("idle"))) {
                     toast.warning(t("TerminalIdleDisconnect"))

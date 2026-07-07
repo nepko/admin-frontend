@@ -435,5 +435,8 @@
     "TerminalWsErrorDesc": "详情请查看控制台。",
     "AIToolCallLabel": "调用",
     "AIToolResultLabel": "结果",
-    "RecordingEmptyHint": "暂无录制数据"
+    "RecordingEmptyHint": "暂无录制数据",
+    "NameRequired": "请输入名称",
+    "PatternsRequired": "请至少填写一条匹配规则",
+    "TerminalDisconnected": "已断开"
 }

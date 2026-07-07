@@ -10,6 +10,8 @@ export interface TerminalTab {
     serverId: number
     sessionId: string
     name: string
+    /** 连接是否已断开（多标签场景下用于标记该标签）。 */
+    disconnected?: boolean
 }
 
 interface TerminalTabsState {
@@ -20,6 +22,7 @@ interface TerminalTabsState {
     removeTab: (key: string) => void
     setActive: (key: string) => void
     toggleSplit: () => void
+    markDisconnected: (key: string) => void
     clear: () => void
 }
 
@@ -29,7 +32,8 @@ export const useTerminalTabs = create<TerminalTabsState>((set) => ({
     split: false,
     addTab: (t) =>
         set((s) => ({
-            tabs: [...s.tabs.filter((x) => x.key !== t.key), t],
+            // 重新打开同一服务器时复位断开标记
+            tabs: [...s.tabs.filter((x) => x.key !== t.key), { ...t, disconnected: false }],
             activeKey: t.key,
         })),
     removeTab: (key) =>
@@ -41,12 +45,17 @@ export const useTerminalTabs = create<TerminalTabsState>((set) => ({
         }),
     setActive: (key) => set({ activeKey: key }),
     toggleSplit: () => set((s) => ({ split: !s.split })),
+    markDisconnected: (key) =>
+        set((s) => ({
+            tabs: s.tabs.map((x) => (x.key === key ? { ...x, disconnected: true } : x)),
+        })),
     clear: () => set({ tabs: [], activeKey: null }),
 }))
 
 export function TerminalTabs() {
     const { t } = useTranslation()
-    const { tabs, activeKey, split, removeTab, setActive, toggleSplit } = useTerminalTabs()
+    const { tabs, activeKey, split, removeTab, setActive, toggleSplit, markDisconnected } =
+        useTerminalTabs()
 
     if (tabs.length === 0) {
         return (
@@ -107,6 +116,7 @@ export function TerminalTabs() {
                             wsUrl={`/api/v1/ws/terminal/${t.sessionId}`}
                             sessionId={t.sessionId}
                             setClose={() => {}}
+                            onDisconnect={() => markDisconnected(t.key)}
                         />
                     </div>
                 ))}

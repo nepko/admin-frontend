@@ -435,5 +435,8 @@
     "TerminalWsErrorDesc": "View console for details.",
     "AIToolCallLabel": "Call",
     "AIToolResultLabel": "Result",
-    "RecordingEmptyHint": "No recording data"
+    "RecordingEmptyHint": "No recording data",
+    "NameRequired": "Name is required",
+    "PatternsRequired": "At least one pattern is required",
+    "TerminalDisconnected": "Disconnected"
 }

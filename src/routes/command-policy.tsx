@@ -9,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
     Table,
     TableBody,
@@ -19,10 +18,24 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { useAuth } from "@/hooks/useAuth"
 import { CommandApproval, CommandPolicy } from "@/types"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useState } from "react"
+import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
+import { z } from "zod"
 import { toast } from "sonner"
 import useSWR from "swr"
 
@@ -32,6 +45,165 @@ const emptyPolicy: Partial<CommandPolicy> = {
     commands_raw: "",
     enabled: true,
     require_approval: false,
+}
+
+function PolicyFormDialog({
+    policy,
+    onClose,
+    onSaved,
+}: {
+    policy: Partial<CommandPolicy>
+    onClose: () => void
+    onSaved: () => void | Promise<void>
+}) {
+    const { t } = useTranslation()
+    const [submitting, setSubmitting] = useState(false)
+
+    const schema = z.object({
+        name: z.string().min(1, t("NameRequired")),
+        type: z.number(),
+        commands_raw: z.string().min(1, t("PatternsRequired")),
+        enabled: z.boolean(),
+        require_approval: z.boolean(),
+    })
+
+    const form = useForm<z.infer<typeof schema>>({
+        resolver: zodResolver(schema),
+        defaultValues: {
+            name: policy.name ?? "",
+            type: policy.type ?? 2,
+            commands_raw: policy.commands_raw ?? "",
+            enabled: policy.enabled ?? true,
+            require_approval: policy.require_approval ?? false,
+        },
+    })
+
+    async function onSubmit(values: z.infer<typeof schema>) {
+        setSubmitting(true)
+        try {
+            // 多余字段（如 id）对后端无意义，提交时仅发送表单字段
+            const payload = { ...values }
+            if (policy.id) {
+                await updateCommandPolicy(policy.id, payload)
+            } else {
+                await createCommandPolicy(payload)
+            }
+            toast.success(t("Saved"))
+            onSaved()
+        } catch (e: any) {
+            toast.error(e?.message || t("NetworkError"))
+        } finally {
+            setSubmitting(false)
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-xl border border-border bg-background p-5 space-y-3">
+                <h3 className="text-lg font-semibold">
+                    {policy.id ? t("Edit") : t("Create")} {t("CommandPolicy")}
+                </h3>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t("Name")}</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="type"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t("Type")}</FormLabel>
+                                    <Select
+                                        value={String(field.value)}
+                                        onValueChange={(v) => field.onChange(Number(v))}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="2">{t("Blacklist")}</SelectItem>
+                                            <SelectItem value="1">{t("Whitelist")}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="commands_raw"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>{t("Patterns")}</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder={t("PatternsPlaceholder")} {...field} />
+                                    </FormControl>
+                                    <FormDescription>{t("PatternsDesc")}</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="enabled"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-3">
+                                    <FormLabel className="mb-0">{t("Enabled")}</FormLabel>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="require_approval"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-3">
+                                    <FormLabel className="mb-0">{t("RequireApproval")}</FormLabel>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onClose}
+                                disabled={submitting}
+                            >
+                                {t("Cancel")}
+                            </Button>
+                            <Button type="submit" disabled={submitting}>
+                                {t("Save")}
+                            </Button>
+                        </div>
+                    </form>
+                </Form>
+            </div>
+        </div>
+    )
 }
 
 export default function CommandPolicyPage() {
@@ -51,26 +223,6 @@ export default function CommandPolicyPage() {
     )
 
     const [editing, setEditing] = useState<Partial<CommandPolicy> | null>(null)
-
-    async function savePolicy() {
-        if (!editing) return
-        try {
-            const payload = {
-                ...editing,
-                commands_raw: editing.commands_raw || "",
-            }
-            if (editing.id) {
-                await updateCommandPolicy(editing.id, payload)
-            } else {
-                await createCommandPolicy(payload)
-            }
-            await mutatePolicies()
-            setEditing(null)
-            toast.success(t("Saved"))
-        } catch (e: any) {
-            toast.error(e?.message || t("NetworkError"))
-        }
-    }
 
     async function onDelete(id: number) {
         try {
@@ -236,72 +388,14 @@ export default function CommandPolicyPage() {
             )}
 
             {editing && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md rounded-xl border border-border bg-background p-5 space-y-3">
-                        <h3 className="text-lg font-semibold">
-                            {editing.id ? t("Edit") : t("Create")} {t("CommandPolicy")}
-                        </h3>
-                        <div className="space-y-1">
-                            <Label>{t("Name")}</Label>
-                            <Input
-                                value={editing.name}
-                                onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <Label>{t("Type")}</Label>
-                            <select
-                                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-                                value={editing.type}
-                                onChange={(e) =>
-                                    setEditing({ ...editing, type: Number(e.target.value) })
-                                }
-                            >
-                                <option value={2}>{t("Blacklist")}</option>
-                                <option value={1}>{t("Whitelist")}</option>
-                            </select>
-                        </div>
-                        <div className="space-y-1">
-                            <Label>{t("Patterns")}</Label>
-                            <Textarea
-                                placeholder={t("PatternsPlaceholder")}
-                                value={editing.commands_raw}
-                                onChange={(e) =>
-                                    setEditing({ ...editing, commands_raw: e.target.value })
-                                }
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                {t("PatternsDesc")}
-                            </p>
-                        </div>
-                        <label className="flex items-center gap-2 text-sm">
-                            <input
-                                type="checkbox"
-                                checked={editing.enabled}
-                                onChange={(e) =>
-                                    setEditing({ ...editing, enabled: e.target.checked })
-                                }
-                            />
-                            {t("Enabled")}
-                        </label>
-                        <label className="flex items-center gap-2 text-sm">
-                            <input
-                                type="checkbox"
-                                checked={editing.require_approval}
-                                onChange={(e) =>
-                                    setEditing({ ...editing, require_approval: e.target.checked })
-                                }
-                            />
-                            {t("RequireApproval")}
-                        </label>
-                        <div className="flex justify-end gap-2 pt-2">
-                            <Button variant="outline" onClick={() => setEditing(null)}>
-                                {t("Cancel")}
-                            </Button>
-                            <Button onClick={savePolicy}>{t("Save")}</Button>
-                        </div>
-                    </div>
-                </div>
+                <PolicyFormDialog
+                    policy={editing}
+                    onClose={() => setEditing(null)}
+                    onSaved={async () => {
+                        await mutatePolicies()
+                        setEditing(null)
+                    }}
+                />
             )}
         </div>
     )

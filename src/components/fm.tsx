@@ -497,7 +497,7 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
                         </AlertDialogHeader>
                         <Input
                             className="mb-1"
-                            placeholder="Path"
+                            placeholder={t("Path")}
                             value={gotoPath}
                             onChange={(e) => {
                                 setGotoPath(e.target.value)

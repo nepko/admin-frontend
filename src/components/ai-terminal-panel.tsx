@@ -475,7 +475,7 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
                                             : "shrink-0 text-emerald-400"
                                     }
                                 >
-                                    {e.type === "call" ? "▶ 调用" : "◀ 结果"} {e.name}
+                                    {e.type === "call" ? t("AIToolCallLabel") : t("AIToolResultLabel")} {e.name}
                                 </span>
                                 <span className="truncate text-muted-foreground">
                                     {e.text}

@@ -146,9 +146,7 @@ export const XtermComponent = forwardRef<HTMLDivElement, XtermProps & JSX.Intrin
             }
             ws.onerror = (e) => {
                 console.error(e)
-                toast("Websocket error", {
-                    description: "View console for details.",
-                })
+                toast.error(t("TerminalWsError"), { description: t("TerminalWsErrorDesc") })
             }
 
             return () => {
@@ -168,6 +166,7 @@ export const XtermComponent = forwardRef<HTMLDivElement, XtermProps & JSX.Intrin
 )
 
 export const TerminalPage = () => {
+    const { t } = useTranslation()
     const { id } = useParams<{ id: string }>()
     const [open, setOpen] = useState(false)
     const terminal = useTerminal(id ? parseInt(id) : undefined)
@@ -195,19 +194,19 @@ export const TerminalPage = () => {
                     setClose={setOpen}
                 />
             ) : (
-                <p>The server does not exist, or have not been connected yet.</p>
+                <p>{t("ServerOffline")}</p>
             )}
             <AlertDialog open={open} onOpenChange={setOpen}>
                 <AlertDialogContent className="sm:max-w-lg">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Session completed</AlertDialogTitle>
+                        <AlertDialogTitle>{t("SessionCompleted")}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            You may close this window now.
+                            {t("SessionCompletedDesc")}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogAction asChild>
-                            <Button onClick={window.close}>Close</Button>
+                            <Button onClick={window.close}>{t("Close")}</Button>
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -425,5 +425,15 @@
     "AIAllowedTools": "Allowed tools (comma-separated, empty = all)",
     "AIAllowedToolsHint": "e.g. list_servers,get_server_metrics,execute_command; tools callable only by admins, governed by the command policy",
     "AIToolsEnabledHint": "AI tool calling is on: it can query servers/metrics/alerts and run commands on servers via the command policy.",
-    "AIToolActivity": "AI Tool Activity"
+    "AIToolActivity": "AI Tool Activity",
+    "TerminalEmptyHint": "Select a server then click “Open Terminal”",
+    "PatternsPlaceholder": "rm -rf.*\nreboot",
+    "ServerOffline": "The server does not exist, or have not been connected yet.",
+    "SessionCompleted": "Session completed",
+    "SessionCompletedDesc": "You may close this window now.",
+    "TerminalWsError": "WebSocket error",
+    "TerminalWsErrorDesc": "View console for details.",
+    "AIToolCallLabel": "Call",
+    "AIToolResultLabel": "Result",
+    "RecordingEmptyHint": "No recording data"
 }

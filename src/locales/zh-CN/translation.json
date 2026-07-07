@@ -425,5 +425,15 @@
     "AIAllowedTools": "允许的工具（逗号分隔，留空=全部）",
     "AIAllowedToolsHint": "如 list_servers,get_server_metrics,execute_command；仅管理员可调用的工具，受命令策略约束",
     "AIToolsEnabledHint": "AI 已开启工具调用：可查询服务器/指标/告警，并能经命令策略在服务器上执行命令。",
-    "AIToolActivity": "AI 工具活动"
+    "AIToolActivity": "AI 工具活动",
+    "TerminalEmptyHint": "请选择服务器后点击「打开终端」",
+    "PatternsPlaceholder": "rm -rf.*\nreboot",
+    "ServerOffline": "服务器不存在或尚未连接",
+    "SessionCompleted": "会话已结束",
+    "SessionCompletedDesc": "您现在可以关闭此窗口。",
+    "TerminalWsError": "WebSocket 连接错误",
+    "TerminalWsErrorDesc": "详情请查看控制台。",
+    "AIToolCallLabel": "调用",
+    "AIToolResultLabel": "结果",
+    "RecordingEmptyHint": "暂无录制数据"
 }

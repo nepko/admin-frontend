@@ -42,10 +42,12 @@ export default function CommandPolicyPage() {
     const { data: policies, mutate: mutatePolicies } = useSWR<CommandPolicy[]>(
         "/api/v1/command-policy",
         swrFetcher,
+        { keepPreviousData: true },
     )
     const { data: approvals, mutate: mutateApprovals } = useSWR<CommandApproval[]>(
         "/api/v1/command-approval",
         swrFetcher,
+        { keepPreviousData: true },
     )
 
     const [editing, setEditing] = useState<Partial<CommandPolicy> | null>(null)
@@ -262,7 +264,7 @@ export default function CommandPolicyPage() {
                         <div className="space-y-1">
                             <Label>{t("Patterns")}</Label>
                             <Textarea
-                                placeholder={"rm -rf.*\nreboot"}
+                                placeholder={t("PatternsPlaceholder")}
                                 value={editing.commands_raw}
                                 onChange={(e) =>
                                     setEditing({ ...editing, commands_raw: e.target.value })

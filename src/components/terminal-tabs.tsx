@@ -1,4 +1,5 @@
 import { Columns2, X } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { create } from "zustand"
 
 import { XtermComponent } from "./terminal"
@@ -44,12 +45,13 @@ export const useTerminalTabs = create<TerminalTabsState>((set) => ({
 }))
 
 export function TerminalTabs() {
+    const { t } = useTranslation()
     const { tabs, activeKey, split, removeTab, setActive, toggleSplit } = useTerminalTabs()
 
     if (tabs.length === 0) {
         return (
             <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
-                请选择服务器后点击「打开终端」
+                {t("TerminalEmptyHint")}
             </div>
         )
     }

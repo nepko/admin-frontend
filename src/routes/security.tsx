@@ -33,10 +33,12 @@ export default function SecurityPage() {
     const { data: config, mutate: mutateConfig } = useSWR<LoginProtectionConfig>(
         "/api/v1/security/login-protection",
         swrFetcher,
+        { keepPreviousData: true },
     )
     const { data: locks, mutate: mutateLocks, error } = useSWR<LoginLockEntry[]>(
         "/api/v1/security/locks",
         swrFetcher,
+        { keepPreviousData: true },
     )
 
     const [form, setForm] = useState<LoginProtectionConfig>({

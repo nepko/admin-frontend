@@ -5,6 +5,8 @@ import { Pause, Play, RotateCcw } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { RecordingChunk } from "@/types"
 
+import { useTranslation } from "react-i18next"
+
 import { Button } from "./ui/button"
 
 function base64ToBytes(b64: string): Uint8Array {
@@ -19,6 +21,7 @@ interface RecordingPlayerProps {
 }
 
 export function RecordingPlayer({ chunks }: RecordingPlayerProps) {
+    const { t } = useTranslation()
     const containerRef = useRef<HTMLDivElement>(null)
     const termRef = useRef<Terminal | null>(null)
     const fitRef = useRef(new FitAddon())
@@ -100,6 +103,14 @@ export function RecordingPlayer({ chunks }: RecordingPlayerProps) {
         setPlaying(false)
         setIndex(0)
         renderUpTo(0)
+    }
+
+    if (chunks.length === 0) {
+        return (
+            <div className="flex h-[420px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
+                {t("RecordingEmptyHint")}
+            </div>
+        )
     }
 
     return (

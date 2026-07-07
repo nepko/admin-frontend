@@ -70,6 +70,10 @@ const settingFormSchema = z.object({
     ai_model: asOptionalField(z.string()),
     ai_temperature: asOptionalField(z.coerce.number()),
     ai_max_tokens: asOptionalField(z.coerce.number().int()),
+    // 二开：AI Agent 工具调用与对话记忆
+    ai_tools_enabled: asOptionalField(z.boolean()),
+    ai_allowed_tools: asOptionalField(z.string()),
+    ai_compression_threshold: asOptionalField(z.coerce.number().int()),
 })
 
 export default function SettingsPage() {
@@ -747,6 +751,36 @@ export default function SettingsPage() {
                                         )}
                                     />
                                 </div>
+                                <FormField
+                                    control={form.control}
+                                    name="ai_tools_enabled"
+                                    render={({ field }) => (
+                                        <FormItem className="flex items-center justify-between">
+                                            <Label className="text-sm">{t("AIToolsEnabled")}</Label>
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="ai_allowed_tools"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label className="text-sm">{t("AIAllowedTools")}</Label>
+                                            <Input
+                                                placeholder="list_servers,get_server_metrics,execute_command"
+                                                {...field}
+                                                value={field.value ?? ""}
+                                            />
+                                            <p className="text-[10px] text-muted-foreground">
+                                                {t("AIAllowedToolsHint")}
+                                            </p>
+                                        </FormItem>
+                                    )}
+                                />
                             </CardContent>
                         </Card>
                         <Button type="submit">{t("Confirm")}</Button>

@@ -420,5 +420,10 @@
     "AIPolicyBlocked": "Command blocked by policy",
     "AIPolicyApproval": "Command requires approval",
     "AISendDelay": "Inject delay",
-    "AISendDelayHint": "Interval between lines injected to the terminal, tuned to the target host's shell responsiveness"
+    "AISendDelayHint": "Interval between lines injected to the terminal, tuned to the target host's shell responsiveness",
+    "AIToolsEnabled": "Enable AI tool calling (Agent)",
+    "AIAllowedTools": "Allowed tools (comma-separated, empty = all)",
+    "AIAllowedToolsHint": "e.g. list_servers,get_server_metrics,execute_command; tools callable only by admins, governed by the command policy",
+    "AIToolsEnabledHint": "AI tool calling is on: it can query servers/metrics/alerts and run commands on servers via the command policy.",
+    "AIToolActivity": "AI Tool Activity"
 }

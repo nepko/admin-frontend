@@ -5,14 +5,18 @@ import { OTPManager } from "@/components/otp-manager"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { OAuthProviderIcon } from "@/components/ui/icon"
 import { useMainStore } from "@/hooks/useMainStore"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 import { useServer } from "@/hooks/useServer"
 import useSetting from "@/hooks/useSetting"
 import { Boxes, Server } from "lucide-react"
-import { useEffect } from "react"
+import { lazy, Suspense, useEffect } from "react"
 import { toast } from "sonner"
+
+// 同 login：OAuth 图标依赖全量 simple-icons，懒加载避免无 OAuth 时下载。
+const OAuthProviderIcon = lazy(() =>
+    import("@/components/ui/icon").then((m) => ({ default: m.OAuthProviderIcon })),
+)
 
 export default function ProfilePage() {
     const { profile, setProfile } = useMainStore()
@@ -114,10 +118,12 @@ export default function ProfilePage() {
                                         className="flex justify-between items-center flex-wrap gap-2"
                                     >
                                         <section className="flex gap-2 items-center">
-                                            <OAuthProviderIcon
-                                                provider={provider}
-                                                className="size-4 text-muted-foreground"
-                                            />
+                                            <Suspense fallback={null}>
+                                                <OAuthProviderIcon
+                                                    provider={provider}
+                                                    className="size-4 text-muted-foreground"
+                                                />
+                                            </Suspense>
                                             <p>{provider}: </p>
                                             {profile.oauth2_bind?.[provider.toLowerCase()] && (
                                                 <p className=" bg-muted px-1.5 py-0.5 text-sm rounded-full">

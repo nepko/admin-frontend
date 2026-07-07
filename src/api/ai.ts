@@ -6,11 +6,23 @@ export interface AIChatMessage {
     content: string
 }
 
+export interface AIToolCallEvent {
+    name: string
+    arguments: string
+}
+
+export interface AIToolResultEvent {
+    name: string
+    content: string
+}
+
 export interface StreamCallbacks {
     onDelta?: (delta: string) => void
     onDone?: () => void
     onError?: (message: string) => void
     onUsage?: (usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }) => void
+    onToolCall?: (call: AIToolCallEvent) => void
+    onToolResult?: (result: AIToolResultEvent) => void
 }
 
 // 同域 POST 需要带上 CSRF 双提交令牌（与 api.ts 中逻辑保持一致）。
@@ -98,6 +110,8 @@ export async function streamAIChat(
                     }
                     if (obj.delta) cb?.onDelta?.(obj.delta)
                     if (obj.usage) cb?.onUsage?.(obj.usage)
+                    if (obj.tool_call) cb?.onToolCall?.(obj.tool_call)
+                    if (obj.tool_result) cb?.onToolResult?.(obj.tool_result)
                     if (obj.done) cb?.onDone?.()
                 } catch {
                     /* 跳过无法解析的分片 */
@@ -118,5 +132,46 @@ export async function streamAIChat(
         cb?.onDone?.()
     } catch (e: any) {
         cb?.onError?.(e?.message || "stream error")
+    }
+}
+
+// 服务端对话记忆：读取/保存/清空当前用户的 AI 对话（C 增强项）。
+
+export async function getAIHistory(): Promise<AIChatMessage[]> {
+    try {
+        const res = await fetch("/api/v1/ai/history", {
+            headers: { ...csrfHeaders() },
+        })
+        if (!res.ok) return []
+        const obj = await res.json()
+        if (obj?.data?.messages && Array.isArray(obj.data.messages)) {
+            return obj.data.messages as AIChatMessage[]
+        }
+    } catch {
+        /* 读取失败降级为空历史 */
+    }
+    return []
+}
+
+export async function saveAIHistory(messages: AIChatMessage[]): Promise<void> {
+    try {
+        await fetch("/api/v1/ai/history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...csrfHeaders() },
+            body: JSON.stringify({ messages }),
+        })
+    } catch {
+        /* 保存失败静默降级（localStorage 兜底） */
+    }
+}
+
+export async function clearAIHistory(): Promise<void> {
+    try {
+        await fetch("/api/v1/ai/history", {
+            method: "DELETE",
+            headers: { ...csrfHeaders() },
+        })
+    } catch {
+        /* 忽略 */
     }
 }

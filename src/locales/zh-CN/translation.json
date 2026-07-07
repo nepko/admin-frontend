@@ -420,5 +420,10 @@
     "AIPolicyBlocked": "命令被策略拦截",
     "AIPolicyApproval": "命令需审批",
     "AISendDelay": "注入延时",
-    "AISendDelayHint": "逐行注入终端的间隔，适配不同主机的 shell 响应速度"
+    "AISendDelayHint": "逐行注入终端的间隔，适配不同主机的 shell 响应速度",
+    "AIToolsEnabled": "启用 AI 工具调用（Agent）",
+    "AIAllowedTools": "允许的工具（逗号分隔，留空=全部）",
+    "AIAllowedToolsHint": "如 list_servers,get_server_metrics,execute_command；仅管理员可调用的工具，受命令策略约束",
+    "AIToolsEnabledHint": "AI 已开启工具调用：可查询服务器/指标/告警，并能经命令策略在服务器上执行命令。",
+    "AIToolActivity": "AI 工具活动"
 }

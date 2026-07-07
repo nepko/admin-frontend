@@ -4,7 +4,15 @@ import { useTranslation } from "react-i18next"
 import useSWR from "swr"
 
 import useSetting from "@/hooks/useSetting"
-import { streamAIChat, type AIChatMessage } from "@/api/ai"
+import {
+    streamAIChat,
+    getAIHistory,
+    saveAIHistory,
+    clearAIHistory,
+    type AIChatMessage,
+    type AIToolCallEvent,
+    type AIToolResultEvent,
+} from "@/api/ai"
 import { getServers } from "@/api/server"
 import type { ModelServer } from "@/types"
 import { useTerminalTabs } from "./terminal-tabs"
@@ -103,6 +111,7 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
     const { t } = useTranslation()
     const { data: config } = useSetting()
     const aiEnabled = !!config?.config?.ai_enabled
+    const aiToolsEnabled = !!config?.config?.ai_tools_enabled
 
     const [mode, setMode] = useState<AIMode>(() => {
         try {
@@ -124,6 +133,10 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
         completion_tokens: number
         total_tokens: number
     } | null>(null)
+    // AI 工具活动（Agent 调用/结果），仅用于前端展示，不落库。
+    const [toolEvents, setToolEvents] = useState<
+        { type: "call" | "result"; name: string; text: string }[]
+    >([])
     const [chat, setChat] = useState<AIChatMessage[]>(() => {
         try {
             const raw = localStorage.getItem("nezha_ai_chat_history")
@@ -167,7 +180,7 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
         )
     }, [activeServer])
 
-    // 对话与模式持久化：面板关闭后仍可恢复上下文。
+    // 对话与模式持久化：面板关闭后仍可恢复上下文（localStorage 作为离线兜底）。
     useEffect(() => {
         try {
             localStorage.setItem("nezha_ai_chat_history", JSON.stringify(chat))
@@ -183,8 +196,39 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
         }
     }, [mode])
 
+    // 服务端对话记忆（C 增强项）：挂载时拉取已持久化的对话。
+    useEffect(() => {
+        let alive = true
+        getAIHistory()
+            .then((m) => {
+                if (alive && m.length > 0) setChat(m)
+            })
+            .catch(() => {
+                /* 服务端不可用时降级到 localStorage */
+            })
+        return () => {
+            alive = false
+        }
+    }, [])
+
+    // 对话变更后防抖保存到服务端（与 localStorage 兜底并行）。
+    useEffect(() => {
+        if (chat.length === 0) return
+        const id = window.setTimeout(() => {
+            saveAIHistory(chat).catch(() => {
+                /* 保存失败静默降级 */
+            })
+        }, 800)
+        return () => clearTimeout(id)
+    }, [chat])
+
     const runStream = useCallback(
-        (messages: AIChatMessage[], onDelta: (d: string) => void) => {
+        (
+            messages: AIChatMessage[],
+            onDelta: (d: string) => void,
+            onToolCall?: (call: AIToolCallEvent) => void,
+            onToolResult?: (result: AIToolResultEvent) => void,
+        ) => {
             // 新请求先取消旧请求，避免并发流互相污染。
             abortRef.current?.abort()
             const controller = new AbortController()
@@ -192,6 +236,7 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
             setStreaming(true)
             setError("")
             setUsage(null)
+            setToolEvents([])
             streamAIChat(
                 messages,
                 undefined,
@@ -206,6 +251,24 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
                         abortRef.current = null
                     },
                     onUsage: (u) => setUsage(u),
+                    onToolCall: onToolCall
+                        ? (c) => {
+                              setToolEvents((e) => [
+                                  ...e,
+                                  { type: "call", name: c.name, text: c.arguments },
+                              ])
+                              onToolCall(c)
+                          }
+                        : undefined,
+                    onToolResult: onToolResult
+                        ? (r) => {
+                              setToolEvents((e) => [
+                                  ...e,
+                                  { type: "result", name: r.name, text: r.content },
+                              ])
+                              onToolResult(r)
+                          }
+                        : undefined,
                 },
                 controller.signal,
             )
@@ -226,14 +289,23 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
             setChat(next)
             const assistant: AIChatMessage = { role: "assistant", content: "" }
             setChat((c) => [...c, assistant])
-            runStream(next, (d) => {
-                assistant.content += d
-                setChat((c) => {
-                    const copy = [...c]
-                    copy[copy.length - 1] = { ...assistant }
-                    return copy
-                })
-            })
+            runStream(
+                next,
+                (d) => {
+                    assistant.content += d
+                    setChat((c) => {
+                        const copy = [...c]
+                        copy[copy.length - 1] = { ...assistant }
+                        return copy
+                    })
+                },
+                () => {
+                    /* 工具调用/结果已通过 runStream 内的 setToolEvents 展示 */
+                },
+                () => {
+                    /* 工具调用/结果已展示 */
+                },
+            )
             return
         }
         const sys = SYSTEM_PROMPTS[mode as Exclude<AIMode, "chat">] + envContext
@@ -243,6 +315,8 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
                 { role: "user", content },
             ],
             (d) => setResult((r) => r + d),
+            () => {},
+            () => {},
         )
     }
 
@@ -315,6 +389,15 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
         setResult("")
         setError("")
         setUsage(null)
+        setToolEvents([])
+        clearAIHistory().catch(() => {
+            /* 忽略 */
+        })
+        try {
+            localStorage.removeItem("nezha_ai_chat_history")
+        } catch {
+            /* ignore */
+        }
     }
 
     const showUsage =
@@ -338,6 +421,12 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
             {!aiEnabled && (
                 <div className="m-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-600">
                     {t("AINotEnabled")}
+                </div>
+            )}
+
+            {aiToolsEnabled && (
+                <div className="mx-3 mt-2 rounded-md border border-sky-500/30 bg-sky-500/10 p-2 text-[10px] text-sky-600">
+                    {t("AIToolsEnabledHint")}
                 </div>
             )}
 
@@ -372,6 +461,29 @@ export function AITerminalPanel({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="flex-1 space-y-3 overflow-auto p-3">
+                {toolEvents.length > 0 && (
+                    <div className="space-y-1 rounded-md border border-border bg-muted/40 p-2 text-[10px]">
+                        <div className="font-medium text-muted-foreground">
+                            {t("AIToolActivity")}
+                        </div>
+                        {toolEvents.map((e, i) => (
+                            <div key={i} className="flex gap-2">
+                                <span
+                                    className={
+                                        e.type === "call"
+                                            ? "shrink-0 text-sky-400"
+                                            : "shrink-0 text-emerald-400"
+                                    }
+                                >
+                                    {e.type === "call" ? "▶ 调用" : "◀ 结果"} {e.name}
+                                </span>
+                                <span className="truncate text-muted-foreground">
+                                    {e.text}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
                 {mode === "chat" ? (
                     <div className="space-y-2">
                         {chat.length === 0 && (

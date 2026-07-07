@@ -8,18 +8,23 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
-import { OAuthProviderIcon } from "@/components/ui/icon"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/hooks/useAuth"
 import useSetting from "@/hooks/useSetting"
 import { zodResolver } from "@hookform/resolvers/zod"
 import i18next from "i18next"
-import { useEffect, useState } from "react"
+import { lazy, Suspense, useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { z } from "zod"
+
+// OAuth 图标依赖全量 simple-icons（约 525KB），仅在有 OAuth 提供商时才需要。
+// 懒加载该组件，使无 OAuth 的部署在首屏不下载这一大块资源。
+const OAuthProviderIcon = lazy(() =>
+    import("@/components/ui/icon").then((m) => ({ default: m.OAuthProviderIcon })),
+)
 
 const formSchema = z.object({
     username: z.string().min(2, {
@@ -160,7 +165,9 @@ function Login() {
                         className="w-full rounded-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] bg-muted text-primary hover:bg-muted/80 hover:text-primary/80"
                         onClick={() => loginWith(p)}
                     >
-                        <OAuthProviderIcon provider={p} className="size-4" />
+                        <Suspense fallback={null}>
+                            <OAuthProviderIcon provider={p} className="size-4" />
+                        </Suspense>
                         {p}
                     </Button>
                 ))}

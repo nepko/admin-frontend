@@ -768,6 +768,12 @@ export interface ModelSetting {
     ai_temperature?: number
     /** 单次回复最大 token */
     ai_max_tokens?: number
+    /** 是否启用 AI 工具调用（Agent） */
+    ai_tools_enabled: boolean
+    /** 允许使用的工具名（逗号分隔，空=全部） */
+    ai_allowed_tools: string
+    /** 对话 token 超此值自动摘要压缩（0=默认 4000） */
+    ai_compression_threshold: number
 }
 
 export interface ModelSettingForm {
@@ -816,6 +822,12 @@ export interface ModelSettingForm {
     ai_temperature?: number
     /** 单次回复最大 token */
     ai_max_tokens?: number
+    /** 是否启用 AI 工具调用（Agent） */
+    ai_tools_enabled?: boolean
+    /** 允许使用的工具名（逗号分隔，空=全部） */
+    ai_allowed_tools?: string
+    /** 对话 token 超此值自动摘要压缩（0=默认 4000） */
+    ai_compression_threshold?: number
 }
 
 export interface ModelSettingResponse {

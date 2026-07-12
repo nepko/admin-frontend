@@ -3,6 +3,7 @@ import { deleteDDNSProfiles, getDDNSProviders } from "@/api/ddns"
 import { ActionButtonGroup } from "@/components/action-button-group"
 import { DDNSCard } from "@/components/ddns"
 import { HeaderButtonGroup } from "@/components/header-button-group"
+import { PageHeader } from "@/components/page-header"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
     Table,
@@ -146,19 +147,22 @@ export default function DDNSPage() {
 
     return (
         <div className="px-3">
-            <div className="flex mt-6 mb-4">
-                <h1 className="flex-1 text-3xl font-bold tracking-tight">{t("DDNS")}</h1>
-                <HeaderButtonGroup
-                    className="flex ml-auto self-end sm:self-auto gap-2 flex-wrap shrink-0"
-                    delete={{
-                        fn: deleteDDNSProfiles,
-                        id: selectedRows.map((r) => r.original.id),
-                        mutate: mutate,
-                    }}
-                >
-                    <DDNSCard mutate={mutate} providers={providers} />
-                </HeaderButtonGroup>
-            </div>
+            <PageHeader
+                className="mt-6 mb-4"
+                title={t("DDNS")}
+                actions={
+                    <HeaderButtonGroup
+                        className="flex gap-2 flex-wrap shrink-0"
+                        delete={{
+                            fn: deleteDDNSProfiles,
+                            id: selectedRows.map((r) => r.original.id),
+                            mutate: mutate,
+                        }}
+                    >
+                        <DDNSCard mutate={mutate} providers={providers} />
+                    </HeaderButtonGroup>
+                }
+            />
 
             <Table>
                 <TableHeader>

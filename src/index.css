@@ -33,6 +33,11 @@
     --color-chart-4: hsl(var(--chart-4));
     --color-chart-5: hsl(var(--chart-5));
 
+    /* 二开：品牌强调色（用于 Logo、激活态、链接、焦点环、关键指标高亮） */
+    --color-brand: hsl(var(--brand));
+    --color-brand-foreground: hsl(var(--brand-foreground));
+    --color-brand-2: hsl(var(--brand-2));
+
     --text-xsm: 0.825rem;
     --text-xsm--line-height: 1.25rem;
 }
@@ -58,6 +63,9 @@
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
+    --brand: 243 75% 59%;
+    --brand-foreground: 0 0% 100%;
+    --brand-2: 280 75% 60%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -80,11 +88,14 @@
     --muted-foreground: 0 0% 63.9%;
     --accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 70% 45%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
+    --brand: 243 75% 66%;
+    --brand-foreground: 0 0% 100%;
+    --brand-2: 280 75% 64%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -118,4 +129,87 @@ body,
 
 ::-webkit-scrollbar-thumb {
     @apply rounded-full border-[1px] border-solid border-transparent bg-border bg-clip-padding;
+}
+
+/* ============================================================
+   二开：统一视觉语言（品牌色 / 玻璃拟态 / 渐变 / 微动效）
+   仅作为可复用的工具类，页面按需引用，不侵入既有组件默认样式。
+   ============================================================ */
+
+@layer utilities {
+    /* 品牌渐变文字 */
+    .text-gradient {
+        @apply bg-clip-text text-transparent;
+        background-image: linear-gradient(
+            135deg,
+            hsl(var(--brand)),
+            hsl(var(--brand-2))
+        );
+    }
+
+    /* 品牌渐变背景（按钮 / 标签 / 强调块） */
+    .bg-brand-gradient {
+        background-image: linear-gradient(
+            135deg,
+            hsl(var(--brand)),
+            hsl(var(--brand-2))
+        );
+    }
+
+    /* 品牌焦点环（无障碍：键盘可达时高亮） */
+    .ring-brand {
+        @apply outline-none ring-offset-background;
+        box-shadow:
+            0 0 0 2px hsl(var(--background)),
+            0 0 0 4px hsl(var(--brand) / 0.55);
+    }
+}
+
+@layer components {
+    /* 玻璃拟态卡片：跨明暗主题通用 */
+    .glass {
+        background-color: hsl(var(--card) / 0.6);
+        backdrop-filter: blur(16px) saturate(140%);
+        -webkit-backdrop-filter: blur(16px) saturate(140%);
+        border: 1px solid hsl(var(--border) / 0.7);
+    }
+
+    /* 可交互卡片悬浮微动效：上浮 + 品牌描边光晕 */
+    .card-hover {
+        transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease,
+            border-color 0.2s ease;
+    }
+    .card-hover:hover {
+        transform: translateY(-2px);
+        border-color: hsl(var(--brand) / 0.45);
+        box-shadow: 0 10px 30px -14px hsl(var(--brand) / 0.4);
+    }
+
+    /* 品牌强调小标签（如状态前缀） */
+    .brand-chip {
+        @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xsm font-medium;
+        background-color: hsl(var(--brand) / 0.12);
+        color: hsl(var(--brand));
+    }
+}
+
+/* 主题切换时的颜色平滑过渡（仅在切换瞬间启用，尊重 reduced-motion） */
+@media (prefers-reduced-motion: no-preference) {
+    html.theme-anim,
+    html.theme-anim *,
+    html.theme-anim *::before,
+    html.theme-anim *::after {
+        transition:
+            background-color 0.3s ease,
+            border-color 0.3s ease,
+            color 0.25s ease,
+            fill 0.25s ease,
+            stroke 0.25s ease;
+    }
+}
+
+::selection {
+    background-color: hsl(var(--brand) / 0.3);
 }

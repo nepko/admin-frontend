@@ -2,6 +2,7 @@ import { updateSettings } from "@/api/settings"
 import { SettingsTab } from "@/components/settings-tab"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { PageHeader } from "@/components/page-header"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Combobox } from "@/components/ui/combobox"
 import {
@@ -62,6 +63,7 @@ const settingFormSchema = z.object({
     terminal_recording_retention_days: asOptionalField(z.coerce.number().int()),
     terminal_idle_timeout_seconds: asOptionalField(z.coerce.number().int()),
     fm_enhanced_enabled: asOptionalField(z.boolean()),
+    enable_command_approval: asOptionalField(z.boolean()),
 
     // 二开：终端 AI 助手（OpenAI 兼容）
     ai_enabled: asOptionalField(z.boolean()),
@@ -70,6 +72,8 @@ const settingFormSchema = z.object({
     ai_model: asOptionalField(z.string()),
     ai_temperature: asOptionalField(z.coerce.number()),
     ai_max_tokens: asOptionalField(z.coerce.number().int()),
+    // 二开：AI 每用户每日 token 预算（0=不限）
+    ai_token_budget_daily: asOptionalField(z.coerce.number().int()),
     // 二开：AI Agent 工具调用与对话记忆
     ai_tools_enabled: asOptionalField(z.boolean()),
     ai_allowed_tools: asOptionalField(z.string()),
@@ -145,11 +149,12 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="px-3">
+        <div className="px-3 py-4">
+            <PageHeader title={t("Settings")} description="全局站点、通知、终端与集成配置" />
             <SettingsTab className="mt-6 mb-4 w-full" />
             <div>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 my-2">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 my-4">
                         <FormField
                             control={form.control}
                             name="site_name"
@@ -644,6 +649,19 @@ export default function SettingsPage() {
                                         </FormItem>
                                     )}
                                 />
+                                <FormField
+                                    control={form.control}
+                                    name="enable_command_approval"
+                                    render={({ field }) => (
+                                        <FormItem className="flex items-center justify-between">
+                                            <Label className="text-sm">{t("EnableCommandApproval")}</Label>
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormItem>
+                                    )}
+                                />
                             </CardContent>
                         </Card>
                         <Card className="w-full">
@@ -753,6 +771,28 @@ export default function SettingsPage() {
                                 </div>
                                 <FormField
                                     control={form.control}
+                                    name="ai_token_budget_daily"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label className="text-sm">{t("AITokenBudgetDaily")}</Label>
+                                            <Input
+                                                type="number"
+                                                {...field}
+                                                value={field.value ?? ""}
+                                                onChange={(e) =>
+                                                    field.onChange(
+                                                        e.target.value === ""
+                                                            ? undefined
+                                                            : Number(e.target.value),
+                                                    )
+                                                }
+                                            />
+                                            <p className="text-xs text-muted-foreground">{t("AITokenBudgetHint")}</p>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
                                     name="ai_tools_enabled"
                                     render={({ field }) => (
                                         <FormItem className="flex items-center justify-between">
@@ -783,7 +823,7 @@ export default function SettingsPage() {
                                 />
                             </CardContent>
                         </Card>
-                        <Button type="submit">{t("Confirm")}</Button>
+                        <Button type="submit" variant="gradient">{t("Confirm")}</Button>
                     </form>
                 </Form>
             </div>

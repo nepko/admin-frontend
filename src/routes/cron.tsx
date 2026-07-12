@@ -4,6 +4,7 @@ import { ActionButtonGroup } from "@/components/action-button-group"
 import { CopyButton } from "@/components/copy-button"
 import { CronCard } from "@/components/cron"
 import { HeaderButtonGroup } from "@/components/header-button-group"
+import { PageHeader } from "@/components/page-header"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
     Table,
@@ -209,19 +210,22 @@ export default function CronPage() {
 
     return (
         <div className="px-3 max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-3 mt-6 mb-4">
-                <h1 className="text-3xl font-bold tracking-tight">{t("Task")}</h1>
-                <HeaderButtonGroup
-                    className="flex gap-2 flex-wrap shrink-0"
-                    delete={{
-                        fn: deleteCron,
-                        id: selectedRows.map((r) => r.original.id),
-                        mutate: mutate,
-                    }}
-                >
-                    <CronCard mutate={mutate} />
-                </HeaderButtonGroup>
-            </div>
+            <PageHeader
+                className="mt-6 mb-4"
+                title={t("Task")}
+                actions={
+                    <HeaderButtonGroup
+                        className="flex gap-2 flex-wrap shrink-0"
+                        delete={{
+                            fn: deleteCron,
+                            id: selectedRows.map((r) => r.original.id),
+                            mutate: mutate,
+                        }}
+                    >
+                        <CronCard mutate={mutate} />
+                    </HeaderButtonGroup>
+                }
+            />
 
             <Table>
                 <TableHeader>

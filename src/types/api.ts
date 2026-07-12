@@ -751,6 +751,8 @@ export interface ModelSetting {
     terminal_idle_timeout_seconds: number
     /** 是否启用文件管理器增强（默认关闭） */
     fm_enhanced_enabled: boolean
+    /** 是否启用命令审批总开关（默认关闭） */
+    enable_command_approval: boolean
     // 二开：终端 AI 助手开关与连接信息（不含明文 API Key）
     /** 是否启用终端 AI 助手（默认关闭） */
     ai_enabled: boolean
@@ -774,6 +776,8 @@ export interface ModelSetting {
     ai_allowed_tools: string
     /** 对话 token 超此值自动摘要压缩（0=默认 4000） */
     ai_compression_threshold: number
+    /** 每用户每日 token 预算（0=不限） */
+    ai_token_budget_daily: number
 }
 
 export interface ModelSettingForm {
@@ -809,6 +813,8 @@ export interface ModelSettingForm {
     terminal_idle_timeout_seconds?: number
     /** 是否启用文件管理器增强（默认关闭） */
     fm_enhanced_enabled?: boolean
+    /** 是否启用命令审批总开关（默认关闭） */
+    enable_command_approval?: boolean
     // 二开：终端 AI 助手配置（ai_api_key 空字符串表示保留已配置密钥）
     /** 是否启用终端 AI 助手（默认关闭） */
     ai_enabled?: boolean
@@ -828,6 +834,8 @@ export interface ModelSettingForm {
     ai_allowed_tools?: string
     /** 对话 token 超此值自动摘要压缩（0=默认 4000） */
     ai_compression_threshold?: number
+    /** 每用户每日 token 预算（0=不限） */
+    ai_token_budget_daily?: number
 }
 
 export interface ModelSettingResponse {

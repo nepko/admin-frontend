@@ -41,10 +41,18 @@ export function ThemeProvider({
                 : "light"
 
             root.classList.add(systemTheme)
-            return
+        } else {
+            root.classList.add(theme)
         }
 
-        root.classList.add(theme)
+        // 仅在此刻启用颜色过渡，避免日常 hover 也跟着缓动
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            root.classList.add("theme-anim")
+            const tid = window.setTimeout(() => {
+                root.classList.remove("theme-anim")
+            }, 340)
+            return () => window.clearTimeout(tid)
+        }
     }, [theme])
 
     const value = {

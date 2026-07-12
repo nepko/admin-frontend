@@ -78,10 +78,12 @@ vi.mock("../components/xui/icon-button", () => ({
 vi.mock("../components/xui/virtulized-data-table", () => ({
     DataTable: () => <div data-testid="data-table" />,
 }))
-vi.mock("lucide-react", () => ({
-    File: () => <div data-testid="file-icon" />,
-    Folder: () => <div data-testid="folder-icon" />,
-}))
+// 部分 mock：保留真实 lucide-react 全部图标（dialog 组件用到 X 等关闭图标，
+// 原 mock 仅 stub File/Folder 会导致 "No X export" 报错）。
+vi.mock("lucide-react", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("lucide-react")>()
+    return { ...actual }
+})
 
 const translate = (key: string) => key
 
@@ -91,20 +93,26 @@ vi.mock("react-i18next", () => ({
 }))
 
 vi.mock("sonner", () => ({ toast: vi.fn() }))
-vi.mock("@/lib/utils", () => ({
-    copyToClipboard: vi.fn(),
-    fm: {
-        parseFMList: async (buf: ArrayBufferLike) => {
-            const view = new DataView(buf)
-            const pathLength = view.getUint32(4, false)
-            const pathBytes = new Uint8Array(buf, 8, pathLength)
+// 部分 mock：保留真实 @/lib/utils（cn 等被 FMComponent 依赖的 dialog 组件使用），
+// 仅覆盖 FM 相关的 fm/fmWorker/formatPath/copyToClipboard。
+vi.mock("@/lib/utils", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("@/lib/utils")>()
+    return {
+        ...actual,
+        copyToClipboard: vi.fn(),
+        fm: {
+            parseFMList: async (buf: ArrayBufferLike) => {
+                const view = new DataView(buf)
+                const pathLength = view.getUint32(4, false)
+                const pathBytes = new Uint8Array(buf, 8, pathLength)
 
-            return { path: new TextDecoder().decode(pathBytes), fmList: [] }
+                return { path: new TextDecoder().decode(pathBytes), fmList: [] }
+            },
         },
-    },
-    fmWorker: new Worker(""),
-    formatPath: (path: string) => path,
-}))
+        fmWorker: new Worker(""),
+        formatPath: (path: string) => path,
+    }
+})
 
 import { FMComponent } from "../components/fm"
 

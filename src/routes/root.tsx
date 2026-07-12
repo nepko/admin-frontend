@@ -7,11 +7,12 @@ import { InjectContext } from "@/lib/inject"
 import { Suspense } from "react"
 import { useEffect } from "react"
 import { useTranslation } from "react-i18next"
-import { Outlet } from "react-router-dom"
+import { Outlet, useLocation } from "react-router-dom"
 
 export default function Root() {
     const { t } = useTranslation()
     const { data: settingData, error } = useSetting()
+    const location = useLocation()
 
     useEffect(() => {
         document.title = settingData?.config?.site_name || "哪吒监控 Nezha Monitoring"
@@ -38,11 +39,14 @@ export default function Root() {
     }
 
     return (
-        <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <section className="text-sm mx-auto h-full flex flex-col justify-between">
                 <div>
                     <Header />
-                    <div className="max-w-5xl mx-auto">
+                    <div
+                        key={location.pathname}
+                        className="mx-auto max-w-5xl animate-in fade-in-0 slide-in-from-bottom-1 duration-300"
+                    >
                         <Suspense
                             fallback={
                                 <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
@@ -54,6 +58,7 @@ export default function Root() {
                         </Suspense>
                     </div>
                 </div>
+                <div className="h-px w-full bg-brand-gradient opacity-20" />
                 <footer className="mx-5 py-5 text-foreground/50 font-light text-xs text-center">
                     &copy; 2019-{new Date().getFullYear()} {t("nezha")} {settingData?.version}
                 </footer>

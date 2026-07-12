@@ -2,6 +2,7 @@ import { swrFetcher } from "@/api/api"
 import { cancelServerTransfer, retryServerTransfer } from "@/api/transfer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/page-header"
 import {
     Table,
     TableBody,
@@ -181,10 +182,11 @@ export default function TransferPage() {
 
     return (
         <div className="px-3">
-            <h1 className="mt-6 text-2xl font-semibold">{t("Transfer.Title")}</h1>
-            <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-                {t("Transfer.PageHint")}
-            </p>
+            <PageHeader
+                className="mt-6 mb-4"
+                title={t("Transfer.Title")}
+                description={t("Transfer.PageHint")}
+            />
             <Table className="mt-6">
                 <TableHeader>
                     <TableRow>

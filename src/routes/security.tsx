@@ -1,5 +1,6 @@
 import { swrFetcher } from "@/api/api"
 import {
+    listLoginAttempts,
     unbanIP,
     unlockAccount,
     updateLoginProtection,
@@ -18,12 +19,15 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/page-header"
 import { useAuth } from "@/hooks/useAuth"
 import { LoginLockEntry, LoginProtectionConfig } from "@/types"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import useSWR from "swr"
+import { ShieldCheck } from "lucide-react"
 
 export default function SecurityPage() {
     const { t } = useTranslation()
@@ -37,6 +41,11 @@ export default function SecurityPage() {
     )
     const { data: locks, mutate: mutateLocks, error } = useSWR<LoginLockEntry[]>(
         "/api/v1/security/locks",
+        swrFetcher,
+        { keepPreviousData: true },
+    )
+    const { data: attempts } = useSWR<LoginAttempt[]>(
+        "/api/v1/security/login-attempts",
         swrFetcher,
         { keepPreviousData: true },
     )
@@ -97,13 +106,14 @@ export default function SecurityPage() {
 
     return (
         <div className="px-3 py-4 space-y-6">
+            <PageHeader title={t("Security")} description="登录防护 · 账号与 IP 封锁管理" />
             <Card>
                 <CardHeader>
                     <CardTitle>{t("LoginProtection")}</CardTitle>
                     <CardDescription>{t("LoginProtectionDesc")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3">
                         <div>
                             <Label className="text-sm font-medium">{t("Enable")}</Label>
                             <p className="text-xs text-muted-foreground">{t("LoginProtectionEnableDesc")}</p>
@@ -164,7 +174,7 @@ export default function SecurityPage() {
                         />
                         <p className="text-xs text-muted-foreground">{t("AllowedCIDRsDesc")}</p>
                     </div>
-                    <Button onClick={onSave} disabled={saving} className="rounded-lg">
+                    <Button onClick={onSave} disabled={saving} variant="gradient" className="rounded-lg">
                         {t("Save")}
                     </Button>
                 </CardContent>
@@ -189,19 +199,38 @@ export default function SecurityPage() {
                         <TableBody>
                             {lockRows.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={isAdmin ? 5 : 4} className="h-24 text-center">
-                                        {t("NoResults")}
+                                    <TableCell colSpan={isAdmin ? 5 : 4} className="h-32 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                            <ShieldCheck className="size-6 opacity-60" />
+                                            <span>{t("NoResults")}</span>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 lockRows.map((row, idx) => (
                                     <TableRow key={`${row.kind}-${row.target}-${idx}`}>
-                                        <TableCell>{t(row.kind === "account" ? "Account" : "IP")}</TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                className={
+                                                    row.kind === "account"
+                                                        ? "border-brand/20 bg-brand/10 text-brand"
+                                                        : "border-sky-500/20 bg-sky-500/10 text-sky-500"
+                                                }
+                                            >
+                                                {t(row.kind === "account" ? "Account" : "IP")}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell className="break-all">{row.target}</TableCell>
                                         <TableCell>
-                                            {row.remaining > 0
-                                                ? `${row.remaining}s`
-                                                : t("Expired")}
+                                            <span
+                                                className={
+                                                    row.remaining > 0
+                                                        ? "font-medium text-brand"
+                                                        : "text-muted-foreground"
+                                                }
+                                            >
+                                                {row.remaining > 0 ? `${row.remaining}s` : t("Expired")}
+                                            </span>
                                         </TableCell>
                                         <TableCell>{row.reason}</TableCell>
                                         {isAdmin && (
@@ -232,6 +261,65 @@ export default function SecurityPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t("LoginAudit")}</CardTitle>
+                    <CardDescription>{t("LoginAuditDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>{t("Username")}</TableHead>
+                                <TableHead>{t("IP")}</TableHead>
+                                <TableHead>{t("Result")}</TableHead>
+                                <TableHead>{t("Action")}</TableHead>
+                                <TableHead>{t("Time")}</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {(attempts ?? []).length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="h-32 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                            <ShieldCheck className="size-6 opacity-60" />
+                                            <span>{t("NoResults")}</span>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                (attempts ?? []).map((a) => (
+                                    <TableRow key={a.id}>
+                                        <TableCell className="break-all">{a.username || "-"}</TableCell>
+                                        <TableCell className="break-all">{a.ip}</TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                className={
+                                                    a.success
+                                                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+                                                        : "border-red-500/20 bg-red-500/10 text-red-500"
+                                                }
+                                            >
+                                                {a.success ? t("Success") : t("Failure")}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>{attemptActionLabel(a.action, t)}</TableCell>
+                                        <TableCell className="text-muted-foreground">{a.created_at}</TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </div>
     )
+}
+
+function attemptActionLabel(action: string, t: (k: string) => string): string {
+    if (action === "login") return t("AttemptLogin")
+    if (action === "login_failed") return t("AttemptFailed")
+    if (action === "login_blocked") return t("AttemptBlocked")
+    return action
 }

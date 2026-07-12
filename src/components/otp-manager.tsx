@@ -1,4 +1,11 @@
-import { getOTPStatus, setupOTP, verifyOTP, disableOTP } from "@/api/otp"
+import {
+    disableOTP,
+    getBackupCodes,
+    getOTPStatus,
+    regenerateBackupCodes,
+    setupOTP,
+    verifyOTP,
+} from "@/api/otp"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,6 +17,7 @@ export function OTPManager() {
     const [enabled, setEnabled] = useState<boolean | null>(null)
     const [secret, setSecret] = useState("")
     const [showSetup, setShowSetup] = useState(false)
+    const [backupCodes, setBackupCodes] = useState<string[]>([])
 
     const loadStatus = async () => {
         try {
@@ -37,11 +45,12 @@ export function OTPManager() {
         const code = prompt("Enter the 6-digit code from your authenticator app:")
         if (!code) return
         try {
-            await verifyOTP(code.trim())
-            toast.success("2FA enabled successfully!")
+            const codes = await verifyOTP(code.trim())
+            setBackupCodes(codes)
             setShowSetup(false)
             setSecret("")
             loadStatus()
+            toast.success("2FA enabled! Save your backup codes below.")
         } catch (e: any) {
             toast.error("Verification failed: " + e.message)
         }
@@ -53,10 +62,38 @@ export function OTPManager() {
         try {
             await disableOTP(code.trim())
             toast.success("2FA disabled successfully!")
+            setBackupCodes([])
             loadStatus()
         } catch (e: any) {
             toast.error("Disable failed: " + e.message)
         }
+    }
+
+    const loadBackupCodes = async () => {
+        try {
+            const codes = await getBackupCodes()
+            setBackupCodes(codes)
+            if (codes.length === 0) {
+                toast.info("No unused backup codes remaining.")
+            }
+        } catch (e: any) {
+            toast.error("Failed to load backup codes: " + e.message)
+        }
+    }
+
+    const handleRegenerate = async () => {
+        try {
+            const codes = await regenerateBackupCodes()
+            setBackupCodes(codes)
+            toast.success("Backup codes regenerated. Old codes are now invalid.")
+        } catch (e: any) {
+            toast.error("Regenerate failed: " + e.message)
+        }
+    }
+
+    const copyAll = () => {
+        navigator.clipboard?.writeText(backupCodes.join("\n"))
+        toast.success("Backup codes copied to clipboard.")
     }
 
     return (
@@ -68,12 +105,16 @@ export function OTPManager() {
             </CardHeader>
             <CardContent className="text-lg font-semibold">
                 Status: {enabled === null ? "Loading..." : enabled ? "Enabled" : "Disabled"}
-                <div className="flex gap-2 mt-4">
+                <div className="flex flex-wrap gap-2 mt-4">
                     {!enabled && (
                         <Button onClick={handleSetup}>Setup 2FA</Button>
                     )}
                     {enabled && (
-                        <Button variant="destructive" onClick={handleDisable}>Disable 2FA</Button>
+                        <>
+                            <Button variant="destructive" onClick={handleDisable}>Disable 2FA</Button>
+                            <Button variant="outline" onClick={loadBackupCodes}>View backup codes</Button>
+                            <Button variant="outline" onClick={handleRegenerate}>Regenerate</Button>
+                        </>
                     )}
                 </div>
                 {showSetup && (
@@ -83,7 +124,26 @@ export function OTPManager() {
                         <p className="text-sm text-muted-foreground">
                             After adding the secret, click Verify and enter the 6-digit code.
                         </p>
-                        <Button onClick={handleVerify}>Verify & Enable</Button>
+                        <Button onClick={handleVerify}>Verify &amp; Enable</Button>
+                    </div>
+                )}
+                {backupCodes.length > 0 && (
+                    <div className="mt-4 p-4 border rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-base">Backup codes — save these now!</Label>
+                            <Button variant="ghost" size="sm" onClick={copyAll}>Copy all</Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            Each code can be used once to sign in if you lose your authenticator device.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 font-mono text-sm">
+                            {backupCodes.map((c) => (
+                                <code key={c} className="rounded bg-muted px-2 py-1">{c}</code>
+                            ))}
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => setBackupCodes([])}>
+                            I&apos;ve saved them
+                        </Button>
                     </div>
                 )}
             </CardContent>

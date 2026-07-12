@@ -26,22 +26,55 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { IconButton } from "@/components/xui/icon-button"
+import { Badge } from "@/components/ui/badge"
 import { useServer } from "@/hooks/useServer"
 import { joinIP } from "@/lib/utils"
+import { computeServerStats } from "@/lib/server-stats"
+import { ServerOff } from "lucide-react"
+import { EmptyState, LoadingState } from "@/components/state"
 import { ModelServerTaskResponse, ModelServer as Server } from "@/types"
 import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table"
 import { useEffect, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import useSWR from "swr"
+import { StatCard } from "@/components/stat-card"
+import { Activity, Cpu, Globe, MemoryStick, Server as ServerIcon, Users } from "lucide-react"
+
+function UsageBar({ label, value }: { label: string; value: number }) {
+    const v = Math.max(0, Math.min(100, Math.round(value)))
+    const barColor =
+        v > 85 ? "bg-red-500" : v > 60 ? "bg-amber-500" : "bg-brand"
+    return (
+        <div className="flex items-center gap-2">
+            <span className="w-8 shrink-0 text-[10px] text-muted-foreground">{label}</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                <div
+                    className={`h-full rounded-full ${barColor} transition-all duration-500`}
+                    style={{ width: `${v}%` }}
+                />
+            </div>
+            <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
+                {v}%
+            </span>
+        </div>
+    )
+}
 
 export default function ServerPage() {
     const { t } = useTranslation()
+    // 列表只挂载时取一次，不后台轮询——避免持续打 API 造成资源占用
+    // （初衷是「优化前端展示、轻量少占用」，实时刷新不属于此范畴）。
     const { data, mutate, error, isLoading } = useSWR<Server[]>("/api/v1/server", swrFetcher, {
         revalidateOnFocus: false,
         revalidateOnReconnect: false,
     })
     const { serverGroups } = useServer()
+    const { data: servicesData } = useSWR<Array<unknown>>(
+        "/api/v1/service",
+        swrFetcher,
+        { revalidateOnFocus: false, revalidateOnReconnect: false },
+    )
 
     useEffect(() => {
         if (error)
@@ -149,9 +182,45 @@ export default function ServerPage() {
             accessorFn: (row) => row.host.version || t("Unknown"),
         },
         {
+            id: "resource",
+            header: "资源",
+            enableSorting: false,
+            cell: ({ row }) => {
+                const s = row.original
+                const cpu = Math.round(s.state?.cpu ?? 0)
+                const memTotal = s.host?.mem_total ?? 0
+                const memUsed = s.state?.mem_used ?? 0
+                const mem = memTotal ? Math.round((memUsed / memTotal) * 100) : 0
+                const diskTotal = s.host?.disk_total ?? 0
+                const diskUsed = s.state?.disk_used ?? 0
+                const disk = diskTotal ? Math.round((diskUsed / diskTotal) * 100) : 0
+                return (
+                    <div className="flex w-36 flex-col gap-1.5">
+                        <UsageBar label={t("CPU")} value={cpu} />
+                        <UsageBar label={t("Memory")} value={mem} />
+                        <UsageBar label={t("Disk")} value={disk} />
+                    </div>
+                )
+            },
+        },
+        {
             header: t("EnableDDNS"),
             accessorKey: "enableDDNS",
             accessorFn: (row) => row.enable_ddns ?? false,
+            cell: ({ row }) => {
+                const on = row.original.enable_ddns
+                return (
+                    <Badge
+                        className={
+                            on
+                                ? "border-emerald-500/20 bg-emerald-500/15 text-emerald-500"
+                                : "border-transparent bg-muted text-muted-foreground"
+                        }
+                    >
+                        {on ? "已启用" : "未启用"}
+                    </Badge>
+                )
+            },
         },
         {
             header: t("HideForGuest"),
@@ -217,6 +286,17 @@ export default function ServerPage() {
         return data ?? []
     }, [data])
 
+    // 聚合逻辑抽到 computeServerStats（数据契约→UI 的可测守卫，见 lib/server-stats.ts）
+    const stats = useMemo(
+        () =>
+            computeServerStats(
+                dataCache,
+                serverGroups?.length ?? 0,
+                servicesData?.length ?? 0,
+            ),
+        [dataCache, serverGroups, servicesData],
+    )
+
     const table = useReactTable({
         data: dataCache,
         columns,
@@ -227,8 +307,52 @@ export default function ServerPage() {
 
     return (
         <div className="px-3 max-w-7xl mx-auto">
+            <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
+                <StatCard
+                    label={t("Server")}
+                    value={stats.total}
+                    icon={ServerIcon}
+                    iconClassName="bg-brand/10 text-brand"
+                    hint="服务器总数"
+                />
+                <StatCard
+                    label={t("Group")}
+                    value={stats.groups}
+                    icon={Users}
+                    iconClassName="bg-sky-500/10 text-sky-500"
+                    hint="服务器分组"
+                />
+                <StatCard
+                    label={t("EnableDDNS")}
+                    value={stats.ddns}
+                    icon={Globe}
+                    iconClassName="bg-emerald-500/10 text-emerald-500"
+                    hint="已启用 DDNS"
+                />
+                <StatCard
+                    label="平均 CPU"
+                    value={`${stats.avgCpu}%`}
+                    icon={Cpu}
+                    iconClassName="bg-brand/10 text-brand"
+                    hint="全部节点均值"
+                />
+                <StatCard
+                    label="平均内存"
+                    value={`${stats.avgMem}%`}
+                    icon={MemoryStick}
+                    iconClassName="bg-fuchsia-500/10 text-fuchsia-500"
+                    hint="全部节点均值"
+                />
+                <StatCard
+                    label={t("Service")}
+                    value={stats.services}
+                    icon={Activity}
+                    iconClassName="bg-amber-500/10 text-amber-500"
+                    hint="监控服务数"
+                />
+            </div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-3 mt-6 mb-4">
-                <h1 className="text-3xl font-bold tracking-tight">{t("Server")}</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-gradient">{t("Server")}</h1>
                 <HeaderButtonGroup
                     className="flex gap-2 flex-wrap shrink-0"
                     delete={{
@@ -281,7 +405,7 @@ export default function ServerPage() {
                     <InstallCommandsMenu className="shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] bg-blue-700 text-white hover:bg-blue-600 dark:hover:bg-blue-800 rounded-lg" />
                 </HeaderButtonGroup>
             </div>
-            <div className="rounded-md border overflow-x-auto">
+            <div className="glass rounded-xl overflow-x-auto">
                 <Table className="min-w-[960px]">
                     <TableHeader className="sticky top-0 bg-background z-10">
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -304,8 +428,8 @@ export default function ServerPage() {
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    {t("Loading")}...
+                                <TableCell colSpan={columns.length} className="h-40">
+                                    <LoadingState label={t("Loading") + "..."} />
                                 </TableCell>
                             </TableRow>
                         ) : table.getRowModel().rows?.length ? (
@@ -324,13 +448,13 @@ export default function ServerPage() {
                                     ))}
                                 </TableRow>
                             ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    {t("NoResults")}
-                                </TableCell>
-                            </TableRow>
-                        )}
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={columns.length} className="h-40">
+                                <EmptyState icon={ServerOff} title={t("NoResults")} />
+                            </TableCell>
+                        </TableRow>
+                    )}
                     </TableBody>
                 </Table>
             </div>

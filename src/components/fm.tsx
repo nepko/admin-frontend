@@ -1,4 +1,4 @@
-import { createFM, getFMEnhanced } from "@/api/fm"
+import { createFM, getFMEnhanced, chmodFile, chownFile, zipFile, unzipFile } from "@/api/fm"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -66,6 +66,7 @@ import { DataTable } from "./xui/virtulized-data-table"
 
 interface FMProps {
     wsUrl: string
+    serverId?: string
 }
 
 type VirtualizedTableRowProps = HTMLAttributes<HTMLTableRowElement> & {
@@ -82,6 +83,7 @@ const arraysEqual = (a: Uint8Array, b: Uint8Array) => {
 
 export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
     wsUrl,
+    serverId,
     ...props
 }) => {
     const { t } = useTranslation()
@@ -387,28 +389,38 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
         }
     }
 
-    // 二开：增强操作（编辑/权限/属主/压缩）。发送 op 消息，等待 agent 回包 NZUP。
-    const sendEnhanced = (buf: ArrayBuffer, label: string) => {
-        opInProgress.current = label
-        wsRef.current?.send(buf)
+    // 编辑写回：复用官方 Upload opcode（opcode 2）走 FM WebSocket 流落盘，无需 agent 新 opcode。
+    const saveEdit = () => {
+        opInProgress.current = t("Save")
+        const { header, content } = fm.writeContent(editTarget, editContent)
+        wsRef.current?.send(header)
+        wsRef.current?.send(content)
+        setEditOpen(false)
     }
 
-    const archive = (opcode: FMOpcode, src: string, dst: string) => {
+    // 压缩/解压：走后端 REST API（复用官方 TaskTypeExec 通道），无需 agent 新 opcode。
+    const archive = async (opcode: FMOpcode, src: string, dst: string) => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
             toast(t("Error"), { description: t("Results.UnExpectedError") })
             return
         }
-        sendEnhanced(fm.buildArchiveMessage(opcode, src, dst), opcode === FMOpcode.Zip ? t("Zip") : t("Unzip"))
+        try {
+            if (opcode === FMOpcode.Zip) {
+                await zipFile(serverId, src, dst)
+            } else {
+                await unzipFile(serverId, src, dst)
+            }
+            toast.success(`${opcode === FMOpcode.Zip ? t("Zip") : t("Unzip")} ${t("Success")}`)
+            listFile()
+        } catch (e) {
+            toast(t("Error"), { description: String(e) })
+        }
     }
 
     // 在线编辑对话框
     const [editOpen, setEditOpen] = useState(false)
     const [editTarget, setEditTarget] = useState("")
     const [editContent, setEditContent] = useState("")
-    const saveEdit = () => {
-        sendEnhanced(fm.buildEditMessage({ path: editTarget, content: editContent }), t("Save"))
-        setEditOpen(false)
-    }
 
     // chmod 对话框
     const [chmodOpen, setChmodOpen] = useState(false)
@@ -418,14 +430,20 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
         setChmodPath(path)
         setChmodOpen(true)
     }
-    const saveChmod = () => {
+    const saveChmod = async () => {
         const mode = parseInt(chmodMode, 8)
         if (isNaN(mode)) {
             toast(t("Error"), { description: t("Results.UnExpectedError") })
             return
         }
-        sendEnhanced(fm.buildChmodMessage({ path: chmodPath, mode }), t("Chmod"))
-        setChmodOpen(false)
+        try {
+            await chmodFile(serverId, chmodPath, mode)
+            toast.success(`${t("Chmod")} ${t("Success")}`)
+            listFile()
+            setChmodOpen(false)
+        } catch (e) {
+            toast(t("Error"), { description: String(e) })
+        }
     }
 
     // chown 对话框
@@ -437,11 +455,17 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
         setChownPath(path)
         setChownOpen(true)
     }
-    const saveChown = () => {
+    const saveChown = async () => {
         const uid = parseInt(chownUid, 10) || 0
         const gid = parseInt(chownGid, 10) || 0
-        sendEnhanced(fm.buildChownMessage({ path: chownPath, uid, gid }), t("Chown"))
-        setChownOpen(false)
+        try {
+            await chownFile(serverId, chownPath, uid, gid)
+            toast.success(`${t("Chown")} ${t("Success")}`)
+            listFile()
+            setChownOpen(false)
+        } catch (e) {
+            toast(t("Error"), { description: String(e) })
+        }
     }
 
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -688,6 +712,7 @@ export const FMCard = ({ id }: { id?: string }) => {
                         <FMComponent
                             className="p-1 space-y-5"
                             wsUrl={`/api/v1/ws/file/${fm.session_id}`}
+                            serverId={id}
                         />
                     ) : (
                         <p>{t("Results.TheServerDoesNotOnline")}</p>
@@ -710,6 +735,7 @@ export const FMCard = ({ id }: { id?: string }) => {
                         <FMComponent
                             className="p-1 space-y-5"
                             wsUrl={`/api/v1/ws/file/${fm.session_id}`}
+                            serverId={id}
                         />
                     ) : (
                         <p>{t("Results.TheServerDoesNotOnline")}</p>

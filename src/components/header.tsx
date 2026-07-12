@@ -18,7 +18,6 @@ import {
 import { useAuth } from "@/hooks/useAuth"
 import { useMainStore } from "@/hooks/useMainStore"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
-import { cn } from "@/lib/utils"
 import i18next from "i18next"
 import { LogOut, Settings, User2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
@@ -69,24 +68,9 @@ export default function Header() {
 
     const navigate = useNavigate()
 
-    // @ts-expect-error DisableAnimatedMan is a global variable
-    const disableAnimatedMan = window.DisableAnimatedMan as boolean
-
     return isDesktop ? (
-        <header className="flex pt-8 px-4 dark:bg-black/40 bg-muted border-b-[1px] overflow-visible">
+        <header className="sticky top-0 z-40 flex pt-6 px-4 glass border-b border-border/60 overflow-visible">
             <NavigationMenu className="flex flex-col items-start relative max-w-5xl mx-auto">
-                {!disableAnimatedMan && (
-                    <img
-                        className={cn(
-                            "absolute right-0 z-[9999] top-11 w-20 scale-100 pointer-events-none",
-                            {
-                                hidden: location.pathname === "/dashboard/login",
-                            },
-                        )}
-                        alt={"animated-man"}
-                        src={"/dashboard/animated-man.webp"}
-                    />
-                )}
                 <section className="w-full flex items-center  justify-between">
                     <div className="flex justify-between items-center w-full">
                         <NavigationMenuLink
@@ -312,7 +296,7 @@ export default function Header() {
                         </DrawerTrigger>
                         <DrawerContent>
                             <DrawerHeader className="text-left">
-                                <DrawerTitle>{t("NavigateTo")}</DrawerTitle>
+                                <DrawerTitle className="text-gradient">{t("NavigateTo")}</DrawerTitle>
                                 <DrawerDescription>
                                     {t("SelectAPageToNavigateTo")}
                                 </DrawerDescription>

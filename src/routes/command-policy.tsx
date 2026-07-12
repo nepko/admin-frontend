@@ -29,10 +29,13 @@ import {
 } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/page-header"
 import { useAuth } from "@/hooks/useAuth"
 import { CommandApproval, CommandPolicy } from "@/types"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useState } from "react"
+import { FileCode2, ShieldAlert } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { z } from "zod"
@@ -99,7 +102,7 @@ function PolicyFormDialog({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-xl border border-border bg-background p-5 space-y-3">
+            <div className="glass w-full max-w-md rounded-xl p-5 space-y-3">
                 <h3 className="text-lg font-semibold">
                     {policy.id ? t("Edit") : t("Create")} {t("CommandPolicy")}
                 </h3>
@@ -259,19 +262,16 @@ export default function CommandPolicyPage() {
 
     return (
         <div className="px-3 py-4 space-y-6">
-            <Card>
-                <CardHeader className="flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>{t("CommandPolicies")}</CardTitle>
-                        <CardDescription>{t("CommandPoliciesDesc")}</CardDescription>
-                    </div>
-                    <Button
-                        size="sm"
-                        onClick={() => setEditing({ ...emptyPolicy })}
-                    >
+            <PageHeader
+                title={t("CommandPolicies")}
+                description={t("CommandPoliciesDesc")}
+                actions={
+                    <Button size="sm" variant="gradient" onClick={() => setEditing({ ...emptyPolicy })}>
                         {t("Create")}
                     </Button>
-                </CardHeader>
+                }
+            />
+            <Card>
                 <CardContent>
                     <Table>
                         <TableHeader>
@@ -286,17 +286,50 @@ export default function CommandPolicyPage() {
                         <TableBody>
                             {(policies ?? []).length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-20 text-center">
-                                        {t("NoResults")}
+                                    <TableCell colSpan={5} className="h-32 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                            <FileCode2 className="size-6 opacity-60" />
+                                            <span>{t("NoResults")}</span>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 (policies ?? []).map((p) => (
                                     <TableRow key={p.id}>
                                         <TableCell>{p.name}</TableCell>
-                                        <TableCell>{typeLabel(p.type)}</TableCell>
-                                        <TableCell>{p.enabled ? t("Yes") : t("No")}</TableCell>
-                                        <TableCell>{p.require_approval ? t("Yes") : t("No")}</TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                className={
+                                                    p.type === 1
+                                                        ? "border-emerald-500/20 bg-emerald-500/15 text-emerald-500"
+                                                        : "border-rose-500/20 bg-rose-500/15 text-rose-500"
+                                                }
+                                            >
+                                                {typeLabel(p.type)}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                className={
+                                                    p.enabled
+                                                        ? "border-emerald-500/20 bg-emerald-500/15 text-emerald-500"
+                                                        : "border-transparent bg-muted text-muted-foreground"
+                                                }
+                                            >
+                                                {p.enabled ? t("Yes") : t("No")}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                className={
+                                                    p.require_approval
+                                                        ? "border-amber-500/20 bg-amber-500/15 text-amber-500"
+                                                        : "border-transparent bg-muted text-muted-foreground"
+                                                }
+                                            >
+                                                {p.require_approval ? t("Yes") : t("No")}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <Button
                                                 size="sm"
@@ -342,8 +375,11 @@ export default function CommandPolicyPage() {
                             <TableBody>
                                 {(approvals ?? []).length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-20 text-center">
-                                            {t("NoResults")}
+                                        <TableCell colSpan={5} className="h-32 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                                <ShieldAlert className="size-6 opacity-60" />
+                                                <span>{t("NoResults")}</span>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -353,7 +389,19 @@ export default function CommandPolicyPage() {
                                                 {a.command}
                                             </TableCell>
                                             <TableCell>{a.username}</TableCell>
-                                            <TableCell>{statusLabel(a.status)}</TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    className={
+                                                        a.status === 1
+                                                            ? "border-amber-500/20 bg-amber-500/15 text-amber-500"
+                                                            : a.status === 2
+                                                              ? "border-emerald-500/20 bg-emerald-500/15 text-emerald-500"
+                                                              : "border-rose-500/20 bg-rose-500/15 text-rose-500"
+                                                    }
+                                                >
+                                                    {statusLabel(a.status)}
+                                                </Badge>
+                                            </TableCell>
                                             <TableCell className="break-all max-w-xs">
                                                 {a.reason || "-"}
                                             </TableCell>
@@ -362,7 +410,7 @@ export default function CommandPolicyPage() {
                                                     <>
                                                         <Button
                                                             size="sm"
-                                                            variant="outline"
+                                                            variant="gradient"
                                                             className="mr-2"
                                                             onClick={() => onApprove(a.id)}
                                                         >

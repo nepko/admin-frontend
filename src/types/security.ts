@@ -19,3 +19,14 @@ export interface LoginLockEntry {
     remaining: number
     reason: string
 }
+
+// 登录审计记录（与后端 model.LoginAttempt 对应）
+export interface LoginAttempt {
+    id: number
+    created_at: string
+    username: string
+    ip: string
+    user_id: number
+    success: boolean
+    action: string // login | login_failed | login_blocked
+}

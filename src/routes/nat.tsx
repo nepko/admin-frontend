@@ -2,6 +2,7 @@ import { swrFetcher } from "@/api/api"
 import { deleteNAT } from "@/api/nat"
 import { ActionButtonGroup } from "@/components/action-button-group"
 import { HeaderButtonGroup } from "@/components/header-button-group"
+import { PageHeader } from "@/components/page-header"
 import { NATCard } from "@/components/nat"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -129,19 +130,22 @@ export default function NATPage() {
 
     return (
         <div className="px-3">
-            <div className="flex mt-6 mb-4">
-                <h1 className="flex-1 text-3xl font-bold tracking-tight"> {t("NATT")}</h1>
-                <HeaderButtonGroup
-                    className="flex ml-auto self-end sm:self-auto gap-2 flex-wrap shrink-0"
-                    delete={{
-                        fn: deleteNAT,
-                        id: selectedRows.map((r) => r.original.id),
-                        mutate: mutate,
-                    }}
-                >
-                    <NATCard mutate={mutate} />
-                </HeaderButtonGroup>
-            </div>
+            <PageHeader
+                className="mt-6 mb-4"
+                title={t("NATT")}
+                actions={
+                    <HeaderButtonGroup
+                        className="flex gap-2 flex-wrap shrink-0"
+                        delete={{
+                            fn: deleteNAT,
+                            id: selectedRows.map((r) => r.original.id),
+                            mutate: mutate,
+                        }}
+                    >
+                        <NATCard mutate={mutate} />
+                    </HeaderButtonGroup>
+                }
+            />
 
             <Table>
                 <TableHeader>

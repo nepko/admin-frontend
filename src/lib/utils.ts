@@ -180,6 +180,20 @@ export const fm = {
             reader.readAsArrayBuffer(blob)
         })
     },
+
+    // 二开：编辑写回 —— 复用官方已支持的 Upload opcode（opcode 2）。
+    // 构造 header（opcode + content 长度 + 完整路径）+ content 字节，走 FM WebSocket 流发送，
+    // 由官方 agent 的 upload handler 落盘，无需 agent 新增 opcode。
+    writeContent: (path: string, content: string) => {
+        const contentBytes = new TextEncoder().encode(content)
+        const pathBytes = new TextEncoder().encode(path)
+        const header = new ArrayBuffer(1 + 8 + pathBytes.length)
+        const view = new DataView(header)
+        view.setUint8(0, FMOpcode.Upload)
+        view.setBigUint64(1, BigInt(contentBytes.length), false)
+        new Uint8Array(header, 9).set(pathBytes)
+        return { header, content: contentBytes }
+    },
 }
 
 export const fmWorker = new FMWorker()

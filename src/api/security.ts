@@ -1,6 +1,9 @@
-import { LoginLockEntry, LoginProtectionConfig } from "@/types"
+import { LoginAttempt, LoginLockEntry, LoginProtectionConfig } from "@/types"
 
 import { FetcherMethod, fetcher } from "./api"
+
+export const listLoginAttempts = (): Promise<LoginAttempt[]> =>
+    fetcher<LoginAttempt[]>(FetcherMethod.GET, "/api/v1/security/login-attempts")
 
 export const getLoginProtection = (): Promise<LoginProtectionConfig> =>
     fetcher<LoginProtectionConfig>(FetcherMethod.GET, "/api/v1/security/login-protection")

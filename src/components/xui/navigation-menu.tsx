@@ -18,11 +18,11 @@ export const NzNavigationMenuLink = (
                 {...props}
                 className={
                     navigationMenuTriggerStyle() +
-                    " hover:bg-inherit data-[active]:bg-inherit transition-colors text-foreground/60 data-[active]:text-foreground hover:text-foreground/90"
+                    " hover:bg-inherit data-[active]:bg-inherit transition-colors text-foreground/60 data-[active]:text-brand hover:text-foreground/90"
                 }
             />
             {props.active && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-black transition-all dark:bg-white" />
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[hsl(var(--brand))] transition-all" />
             )}
         </div>
     )

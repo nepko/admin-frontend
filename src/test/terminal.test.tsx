@@ -37,6 +37,11 @@ vi.mock("@xterm/xterm", () => ({
         loadAddon() {}
         open() {}
         dispose() {}
+        // 组件在 effect 中注册 onSelectionChange（二开：选区上报供 AI 助手复用），
+        // mock 需提供该方法，否则渲染时抛 "onSelectionChange is not a function"。
+        onSelectionChange() {
+            return { dispose() {} }
+        }
     },
 }))
 

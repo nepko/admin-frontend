@@ -8,7 +8,7 @@ import {
     QuickCommand,
 } from "@/types"
 import { useServer } from "@/hooks/useServer"
-import { Check, Play, Sparkles, TerminalSquare } from "lucide-react"
+import { Check, MonitorPlay, Play, Sparkles, TerminalSquare } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import useSWR from "swr"
@@ -38,6 +38,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/page-header"
 import { TerminalTabs } from "@/components/terminal-tabs"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
@@ -118,24 +119,28 @@ export default function TerminalSessionsPage() {
 
     return (
         <div className="px-3 py-4 space-y-4">
-            <div className="flex items-center gap-2">
-                <TerminalSquare className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold tracking-tight">{t("Terminals")}</h1>
-                <Link
-                    to="/dashboard/recordings"
-                    className="ml-auto text-sm text-primary hover:underline"
-                >
-                    {t("TerminalRecordings")}
-                </Link>
-                <Button
-                    size="sm"
-                    variant={aiOpen ? "default" : "outline"}
-                    onClick={() => setAiOpen((o) => !o)}
-                >
-                    <Sparkles className="h-4 w-4" />
-                    {t("AIAssistant")}
-                </Button>
-            </div>
+            <PageHeader
+                title={t("Terminals")}
+                actions={
+                    <>
+                        <Link
+                            to="/dashboard/recordings"
+                            className="inline-flex items-center gap-1 text-sm text-brand hover:underline"
+                        >
+                            <MonitorPlay className="h-4 w-4" />
+                            {t("TerminalRecordings")}
+                        </Link>
+                        <Button
+                            size="sm"
+                            variant={aiOpen ? "gradient" : "outline"}
+                            onClick={() => setAiOpen((o) => !o)}
+                        >
+                            <Sparkles className="h-4 w-4" />
+                            {t("AIAssistant")}
+                        </Button>
+                    </>
+                }
+            />
 
             <div
                 className={`grid grid-cols-1 gap-4 ${
@@ -166,7 +171,7 @@ export default function TerminalSessionsPage() {
                                             type="checkbox"
                                             checked={selected.includes(s.id)}
                                             onChange={() => toggleServer(s.id)}
-                                            className="accent-primary"
+                                            className="accent-brand"
                                         />
                                         <span className="truncate">{s.name}</span>
                                     </label>
@@ -174,7 +179,7 @@ export default function TerminalSessionsPage() {
                             )}
                         </div>
                         <div className="flex gap-2">
-                            <Button size="sm" onClick={openTerminals} className="flex-1">
+                            <Button size="sm" variant="gradient" onClick={openTerminals} className="flex-1">
                                 <TerminalSquare className="h-4 w-4" />
                                 {t("OpenTerminal")}
                             </Button>
@@ -257,7 +262,7 @@ export default function TerminalSessionsPage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Button onClick={runCommand} disabled={executing}>
+                        <Button onClick={runCommand} disabled={executing} variant="gradient">
                             <Play className="h-4 w-4" />
                             {t("ExecuteCommand")}
                         </Button>

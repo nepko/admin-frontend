@@ -18,10 +18,13 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import { PageHeader } from "@/components/page-header"
+import { EmptyState, ErrorState, LoadingState } from "@/components/state"
 import { RecordingPlayer } from "@/components/recording-player"
 import { useAuth } from "@/hooks/useAuth"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { MonitorPlay } from "lucide-react"
 import useSWR from "swr"
 
 function fmtTime(ts: number) {
@@ -70,6 +73,7 @@ export default function RecordingsPage() {
 
     return (
         <div className="px-3 py-4 space-y-6">
+            <PageHeader title={t("TerminalRecordings")} description={t("TerminalRecordingsDesc")} />
             <Card>
                 <CardHeader>
                     <CardTitle>{t("TerminalRecordings")}</CardTitle>
@@ -77,15 +81,14 @@ export default function RecordingsPage() {
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
-                        <p className="text-sm text-muted-foreground">{t("Loading")}</p>
+                        <LoadingState label={t("Loading")} />
                     ) : error ? (
-                        <p className="text-sm text-destructive">{error.message}</p>
+                        <ErrorState message={error.message} />
                     ) : rows.length === 0 ? (
-                        <p className="h-24 text-center text-sm text-muted-foreground">
-                            {t("NoResults")}
-                        </p>
+                        <EmptyState icon={MonitorPlay} title={t("NoResults")} />
                     ) : (
-                        <Table>
+                        <div className="overflow-x-auto">
+                        <Table className="min-w-[640px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>{t("Server")}</TableHead>
@@ -115,7 +118,7 @@ export default function RecordingsPage() {
                                         <TableCell className="text-right">
                                             <Button
                                                 size="sm"
-                                                variant="outline"
+                                                variant="gradient"
                                                 onClick={() => setActive(row)}
                                             >
                                                 {t("Replay")}
@@ -125,6 +128,7 @@ export default function RecordingsPage() {
                                 ))}
                             </TableBody>
                         </Table>
+                        </div>
                     )}
                 </CardContent>
             </Card>
@@ -137,9 +141,7 @@ export default function RecordingsPage() {
                         </DialogTitle>
                     </DialogHeader>
                     {loadingChunks ? (
-                        <p className="py-12 text-center text-sm text-muted-foreground">
-                            {t("Loading")}
-                        </p>
+                        <LoadingState label={t("Loading")} />
                     ) : (
                         <RecordingPlayer chunks={chunks} />
                     )}

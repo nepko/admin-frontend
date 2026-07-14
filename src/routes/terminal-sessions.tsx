@@ -1,5 +1,6 @@
 import { executeBatchCommand, listCommandHistory, listQuickCommands } from "@/api/quick-command"
 import { createTerminal } from "@/api/terminal"
+import { sendTerminalInput, hasTerminalSession } from "@/lib/terminalBus"
 import { AITerminalPanel } from "@/components/ai-terminal-panel"
 import { TerminalTab, useTerminalTabs } from "@/components/terminal-tabs"
 import {
@@ -21,7 +22,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
     Select,
     SelectContent,
@@ -43,6 +44,18 @@ import { TerminalTabs } from "@/components/terminal-tabs"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
 
+// normalizeCommand 把粘贴进来的命令做安全清理，避免「粘错」：
+// 统一换行符、去除每行行尾空白（保留行首缩进，避免破坏 heredoc）、
+// 折叠多余空行、去掉整体首尾空行。
+const normalizeCommand = (raw: string): string =>
+    raw
+        .replace(/\r\n?/g, "\n")
+        .split("\n")
+        .map((l) => l.replace(/[ \t]+$/g, ""))
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .replace(/^\n+|\n+$/g, "")
+
 export default function TerminalSessionsPage() {
     const { t } = useTranslation()
     const { servers } = useServer()
@@ -55,6 +68,7 @@ export default function TerminalSessionsPage() {
     const [aiOpen, setAiOpen] = useState(false)
 
     const addTab = useTerminalTabs((s) => s.addTab)
+    const activeKey = useTerminalTabs((s) => s.activeKey)
 
     const { data: quickCommands } = useSWR<QuickCommand[]>(
         "/api/v1/quick-command",
@@ -97,13 +111,14 @@ export default function TerminalSessionsPage() {
             toast.warning(t("NoServersSelected"))
             return
         }
-        if (!command.trim()) {
+        const cmd = normalizeCommand(command)
+        if (!cmd.trim()) {
             toast.warning(t("CommandRequired"))
             return
         }
         setExecuting(true)
         try {
-            const res = await executeBatchCommand(command, selected)
+            const res = await executeBatchCommand(cmd, selected)
             if (res && typeof res === "object" && "status" in res && res.status === "pending") {
                 toast.info(t("PendingApproval"))
                 setResults(null)
@@ -116,6 +131,26 @@ export default function TerminalSessionsPage() {
             setExecuting(false)
         }
     }
+
+    // sendToTerminal 把编辑区命令逐行发送到当前激活的终端，等价于手动键入，
+    // 避免直接往 xterm 粘贴带来的换行/选中/格式问题（"省得粘错"）。
+    const sendToTerminal = () => {
+        const cmd = normalizeCommand(command)
+        if (!cmd.trim()) {
+            toast.warning(t("CommandRequired"))
+            return
+        }
+        if (!activeKey || !hasTerminalSession(activeKey)) {
+            toast.warning(t("NoActiveTerminal"))
+            return
+        }
+        for (const line of cmd.split("\n")) {
+            sendTerminalInput(activeKey, line + "\n")
+        }
+        toast.success(t("SentToTerminal"))
+    }
+
+    const lineCount = command === "" ? 0 : command.split("\n").length
 
     return (
         <div className="px-3 py-4 space-y-4">
@@ -216,56 +251,74 @@ export default function TerminalSessionsPage() {
                     <CardDescription>{t("BatchExecuteDesc")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Input
-                            className="min-w-[240px] flex-1"
+                    <div className="space-y-2">
+                        <Textarea
+                            className="min-h-[96px] resize-y font-mono text-sm"
                             placeholder={t("CommandPlaceholder")}
                             value={command}
                             onChange={(e) => setCommand(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === "Enter") runCommand()
+                                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                                    e.preventDefault()
+                                    runCommand()
+                                }
                             }}
                         />
-                        <Select
-                            onValueChange={(v) => {
-                                const q = quickCommands?.find((x) => String(x.id) === v)
-                                if (q) setCommand(q.command)
-                            }}
-                        >
-                            <SelectTrigger className="w-44">
-                                <SelectValue placeholder={t("QuickCommands")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {(quickCommands ?? []).map((q) => (
-                                    <SelectItem key={q.id} value={String(q.id)}>
-                                        {q.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            onValueChange={(v) => {
-                                const h = history?.find((x) => String(x.id) === v)
-                                if (h) setCommand(h.command)
-                            }}
-                        >
-                            <SelectTrigger className="w-44">
-                                <SelectValue placeholder={t("CommandHistory")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {(history ?? []).map((h) => (
-                                    <SelectItem key={h.id} value={String(h.id)}>
-                                        <span className="block max-w-40 truncate">
-                                            {h.command}
-                                        </span>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Button onClick={runCommand} disabled={executing} variant="gradient">
-                            <Play className="h-4 w-4" />
-                            {t("ExecuteCommand")}
-                        </Button>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="mr-auto text-xs text-muted-foreground">
+                                {t("LinesChars", { lines: lineCount, chars: command.length })}
+                            </span>
+                            <Select
+                                onValueChange={(v) => {
+                                    const q = quickCommands?.find((x) => String(x.id) === v)
+                                    if (q) setCommand(q.command)
+                                }}
+                            >
+                                <SelectTrigger className="w-44">
+                                    <SelectValue placeholder={t("QuickCommands")} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {(quickCommands ?? []).map((q) => (
+                                        <SelectItem key={q.id} value={String(q.id)}>
+                                            {q.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                onValueChange={(v) => {
+                                    const h = history?.find((x) => String(x.id) === v)
+                                    if (h) setCommand(h.command)
+                                }}
+                            >
+                                <SelectTrigger className="w-44">
+                                    <SelectValue placeholder={t("CommandHistory")} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {(history ?? []).map((h) => (
+                                        <SelectItem key={h.id} value={String(h.id)}>
+                                            <span className="block max-w-40 truncate">
+                                                {h.command}
+                                            </span>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                variant="outline"
+                                onClick={sendToTerminal}
+                                disabled={!activeKey || !hasTerminalSession(activeKey)}
+                                title={t("SendToTerminalHint")}
+                            >
+                                <TerminalSquare className="h-4 w-4" />
+                                {t("SendToTerminal")}
+                            </Button>
+                            <Button onClick={runCommand} disabled={executing} variant="gradient">
+                                <Play className="h-4 w-4" />
+                                {t("ExecuteCommand")}
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{t("CommandEditHint")}</p>
                     </div>
 
                     {results && (

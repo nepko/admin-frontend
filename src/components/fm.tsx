@@ -406,9 +406,9 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
         }
         try {
             if (opcode === FMOpcode.Zip) {
-                await zipFile(serverId, src, dst)
+                await zipFile(serverId!, src, dst)
             } else {
-                await unzipFile(serverId, src, dst)
+                await unzipFile(serverId!, src, dst)
             }
             toast.success(`${opcode === FMOpcode.Zip ? t("Zip") : t("Unzip")} ${t("Success")}`)
             listFile()
@@ -437,7 +437,7 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
             return
         }
         try {
-            await chmodFile(serverId, chmodPath, mode)
+            await chmodFile(serverId!, chmodPath, mode)
             toast.success(`${t("Chmod")} ${t("Success")}`)
             listFile()
             setChmodOpen(false)
@@ -459,7 +459,7 @@ export const FMComponent: React.FC<FMProps & JSX.IntrinsicElements["div"]> = ({
         const uid = parseInt(chownUid, 10) || 0
         const gid = parseInt(chownGid, 10) || 0
         try {
-            await chownFile(serverId, chownPath, uid, gid)
+            await chownFile(serverId!, chownPath, uid, gid)
             toast.success(`${t("Chown")} ${t("Success")}`)
             listFile()
             setChownOpen(false)

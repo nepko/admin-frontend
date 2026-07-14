@@ -1,6 +1,5 @@
 import { swrFetcher } from "@/api/api"
 import {
-    listLoginAttempts,
     unbanIP,
     unlockAccount,
     updateLoginProtection,
@@ -22,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/page-header"
 import { useAuth } from "@/hooks/useAuth"
-import { LoginLockEntry, LoginProtectionConfig } from "@/types"
+import { LoginAttempt, LoginLockEntry, LoginProtectionConfig } from "@/types"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"

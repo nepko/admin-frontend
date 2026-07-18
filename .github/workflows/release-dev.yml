@@ -1,0 +1,54 @@
+name: Release (dev)
+
+# 二开专用发布：手动从 Actions 页面触发，基于 dev 分支严格构建
+# (npm run build，不使用 build-ignore-error) 并打 GitHub Release 出包。
+# 与官方 release.yaml（仅在打 v* tag 时用 Bun 构建）互补：
+#   - 打 v* tag             -> 官方 release.yaml 自动出包
+#   - 想随时从 dev 出包     -> 在这里点 "Run workflow" 输入 tag 即可
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, e.g. v1.0.0-dev"
+        required: true
+        default: ""
+      prerelease:
+        description: "Mark as prerelease"
+        type: boolean
+        default: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Compress dist folder
+        run: zip -r dist.zip dist
+
+      - name: Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          files: dist.zip
+          prerelease: ${{ github.event.inputs.prerelease }}
+          generate_release_notes: true
